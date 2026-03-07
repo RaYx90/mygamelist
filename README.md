@@ -17,6 +17,7 @@ Calendario de lanzamientos de videojuegos para el año en curso, con sincronizac
 - ❤️ Favoritos y marcado de juegos comprados (requiere cuenta)
 - 👥 Vista de grupo: ve qué juegos quieren o tienen comprados tus amigos
 - 🔄 Sincronización automática diaria con IGDB
+- 🌐 Descripciones de juegos traducidas al español automáticamente
 - 📱 Diseño responsive — cuadrícula 7 columnas en escritorio, lista en móvil
 
 ## Tech Stack
@@ -29,6 +30,7 @@ Calendario de lanzamientos de videojuegos para el año en curso, con sincronizac
 | ORM | EF Core 10 — Code First + Migrations |
 | CQRS | MediatR |
 | Fuente de datos | IGDB API (Twitch) |
+| Traducción | LibreTranslate (contenedor Docker autoalojado) |
 | Resiliencia | Polly — retry con backoff exponencial |
 | Auth | JWT |
 | Despliegue | Docker + Docker Compose |
@@ -81,9 +83,16 @@ DB_PASSWORD=GameList_Prod_2026!
 docker compose up -d
 ```
 
+Levanta **3 servicios**: base de datos (PostgreSQL), traductor (LibreTranslate) y la aplicación web.
+
 La aplicación estará disponible en **http://localhost:8080**
 
-En el primer arranque, el `BackgroundService` sincroniza automáticamente los datos de IGDB. Dependiendo del año, puede tardar unos minutos.
+En el primer arranque ocurre lo siguiente:
+1. **LibreTranslate** descarga los modelos de idioma (inglés + español) — puede tardar 2-3 minutos.
+2. Una vez listo, el `BackgroundService` sincroniza los juegos desde IGDB.
+3. Las descripciones se traducen automáticamente al español durante la sincronización.
+
+> **Nota:** LibreTranslate se autoaloja en el propio Docker Compose — no requiere cuenta ni API key externa.
 
 ### 4. Registrarse
 

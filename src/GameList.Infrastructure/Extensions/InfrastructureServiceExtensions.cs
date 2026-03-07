@@ -3,6 +3,7 @@ using GameList.Domain.Ports;
 using GameList.Infrastructure.Auth;
 using GameList.Infrastructure.BackgroundServices;
 using GameList.Infrastructure.Clients.Igdb;
+using GameList.Infrastructure.Clients.LibreTranslate;
 using GameList.Infrastructure.Persistence;
 using GameList.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -48,6 +49,11 @@ public static class InfrastructureServiceExtensions
         // IGDB Data Provider with standard resilience (retry + circuit breaker + timeout)
         services.AddHttpClient<IGameDataProvider, IgdbDataProviderAdapter>()
             .AddStandardResilienceHandler();
+
+        // LibreTranslate (contenedor propio, sin clave, sin límites)
+        services.Configure<LibreTranslateOptionsConfig>(
+            configuration.GetSection(LibreTranslateOptionsConfig.SectionName));
+        services.AddHttpClient<ITranslationService, LibreTranslateAdapter>();
 
         // Application services
         services.AddScoped<IGameSyncService, GameSyncService>();

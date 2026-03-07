@@ -8,6 +8,7 @@ public sealed record GameReleaseDto(
     string GameName,
     string GameSlug,
     string? Summary,
+    string? SummaryEs,
     string? CoverImageUrl,
     int PlatformId,
     string PlatformName,

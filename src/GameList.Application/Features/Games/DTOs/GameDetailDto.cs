@@ -7,6 +7,7 @@ public sealed record GameDetailDto(
     string Name,
     string Slug,
     string? Summary,
+    string? SummaryEs,
     string? CoverImageUrl,
     IReadOnlyList<GameReleaseDto> Releases
 );

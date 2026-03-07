@@ -17,6 +17,7 @@ public static class GameMapper
             GameName: release.Game?.Name ?? string.Empty,
             GameSlug: release.Game?.Slug ?? string.Empty,
             Summary: release.Game?.Summary,
+            SummaryEs: release.Game?.SummaryEs,
             CoverImageUrl: release.Game?.CoverImageUrl,
             PlatformId: release.PlatformId,
             PlatformName: release.Platform?.Name ?? string.Empty,
@@ -42,6 +43,7 @@ public static class GameMapper
         Name: game.Name,
         Slug: game.Slug,
         Summary: game.Summary,
+        SummaryEs: game.SummaryEs,
         CoverImageUrl: game.CoverImageUrl,
         Releases: game.Releases.Select(ToDto).ToList().AsReadOnly()
     );

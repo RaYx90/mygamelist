@@ -35,6 +35,9 @@ internal sealed class GameConfiguration : IEntityTypeConfiguration<GameEntity>
         builder.Property(g => g.Summary)
             .HasMaxLength(5000);
 
+        builder.Property(g => g.SummaryEs)
+            .HasMaxLength(5000);
+
         builder.Property(g => g.CoverImageUrl)
             .HasMaxLength(1000);
 

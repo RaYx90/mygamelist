@@ -34,8 +34,8 @@
             <span class="detail-label">Región:</span>
             <span class="detail-value">{{ game.region }}</span>
           </div>
-          <div v-if="game.summary" class="game-summary mt-3">
-            <p>{{ game.summary }}</p>
+          <div v-if="game.summaryEs || game.summary" class="game-summary mt-3">
+            <p>{{ game.summaryEs || game.summary }}</p>
           </div>
 
           <div v-if="isLoggedIn" class="social-actions mt-3">

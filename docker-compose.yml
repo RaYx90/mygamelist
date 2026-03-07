@@ -1,4 +1,18 @@
 services:
+  translate:
+    image: libretranslate/libretranslate
+    container_name: gamelist-translate
+    environment:
+      LT_LOAD_ONLY: "en,es"
+      LT_DISABLE_WEB_UI: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5000/languages || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 180s
+    restart: unless-stopped
+
   db:
     image: postgres:17-alpine
     container_name: gamelist-db
@@ -32,10 +46,13 @@ services:
       Igdb__ClientId: "${IGDB_CLIENT_ID}"
       Igdb__ClientSecret: "${IGDB_CLIENT_SECRET}"
       Registration__SecretCode: "${REGISTRATION_SECRET_CODE}"
+      LibreTranslate__ApiUrl: "http://translate:5000"
     volumes:
       - dataprotection_keys:/app/dataprotection-keys
     depends_on:
       db:
+        condition: service_healthy
+      translate:
         condition: service_healthy
     restart: unless-stopped
 

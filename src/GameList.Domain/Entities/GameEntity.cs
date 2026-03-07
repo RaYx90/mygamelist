@@ -8,6 +8,7 @@ public sealed class GameEntity
     public int Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public string? Summary { get; private set; }
+    public string? SummaryEs { get; private set; }
     public string? CoverImageUrl { get; private set; }
     public string Slug { get; private set; } = string.Empty;
     public long IgdbId { get; private set; }
@@ -52,6 +53,12 @@ public sealed class GameEntity
             CreatedAt = now,
             UpdatedAt = now
         };
+    }
+
+    public void UpdateSummaryEs(string? summaryEs)
+    {
+        SummaryEs = summaryEs?.Trim();
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Update(
