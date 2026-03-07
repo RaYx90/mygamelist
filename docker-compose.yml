@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: gamelist-db
+    environment:
+      POSTGRES_DB: gamelist
+      POSTGRES_USER: gamelist
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-GameList_Prod_2026!}"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gamelist -d gamelist"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gamelist-web
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=gamelist;Username=gamelist;Password=${DB_PASSWORD:-GameList_Prod_2026!}"
+      Igdb__ClientId: "${IGDB_CLIENT_ID}"
+      Igdb__ClientSecret: "${IGDB_CLIENT_SECRET}"
+      Registration__SecretCode: "${REGISTRATION_SECRET_CODE}"
+    volumes:
+      - dataprotection_keys:/app/dataprotection-keys
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  dataprotection_keys:
+    driver: local
