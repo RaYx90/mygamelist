@@ -1,0 +1,135 @@
+# 🎮 GameList
+
+Calendario de lanzamientos de videojuegos para el año en curso, con sincronización diaria desde la API de IGDB (Twitch). Filtra por plataforma, tipo de público (indie / no indie) o busca un juego concreto.
+
+![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet)
+![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
+
+## Características
+
+- 📅 Calendario mensual con todos los lanzamientos del año
+- 🔍 Búsqueda por nombre de juego en tiempo real
+- 🎯 Filtro por plataforma (PC, PS5, Xbox Series X|S, Switch, Switch 2)
+- 👤 Filtro indie / no indie
+- 🏷️ Cada juego muestra si es exclusivo o multiplataforma
+- ❤️ Favoritos y marcado de juegos comprados (requiere cuenta)
+- 👥 Vista de grupo: ve qué juegos quieren o tienen comprados tus amigos
+- 🔄 Sincronización automática diaria con IGDB
+- 📱 Diseño responsive — cuadrícula 7 columnas en escritorio, lista en móvil
+
+## Tech Stack
+
+| Capa | Tecnología |
+|---|---|
+| Backend | .NET 10 / ASP.NET Core |
+| Frontend | Vue 3 + Vite (SPA servida desde wwwroot) |
+| Base de datos | PostgreSQL 17 |
+| ORM | EF Core 10 — Code First + Migrations |
+| CQRS | MediatR |
+| Fuente de datos | IGDB API (Twitch) |
+| Resiliencia | Polly — retry con backoff exponencial |
+| Auth | JWT |
+| Despliegue | Docker + Docker Compose |
+| Tests | xUnit + WebApplicationFactory + Testcontainers |
+
+## Arquitectura
+
+Clean Architecture / Hexagonal — 4 capas:
+
+```
+src/
+├── GameList.Domain/          → Entidades, Value Objects, Ports (interfaces) — sin dependencias
+├── GameList.Application/     → Casos de uso (Queries, Commands, DTOs, Mappers)
+├── GameList.Infrastructure/  → Adaptadores (EF Core, cliente IGDB, BackgroundService)
+└── GameList.Web/             → API mínima, Vue SPA, raíz de DI
+tests/
+└── GameList.Api.Tests/       → Tests de integración (WebApplicationFactory)
+```
+
+## Requisitos
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (o Docker Engine + Compose)
+- Credenciales de la [API de IGDB](https://api-docs.igdb.com/#getting-started) (gratuitas — se obtienen en el portal de Twitch)
+
+## Puesta en marcha
+
+### 1. Clonar el repositorio
+
+```bash
+git clone https://github.com/RaYx90/mygamelist.git
+cd mygamelist
+```
+
+### 2. Configurar variables de entorno
+
+Crea un fichero `.env` en la raíz del proyecto:
+
+```env
+IGDB_CLIENT_ID=tu_client_id
+IGDB_CLIENT_SECRET=tu_client_secret
+REGISTRATION_SECRET_CODE=codigo_secreto_para_registrarse
+DB_PASSWORD=GameList_Prod_2026!
+```
+
+> Las credenciales de IGDB se obtienen en [dev.twitch.tv](https://dev.twitch.tv/console/apps) creando una aplicación con `Client Type = Confidential`.
+
+### 3. Levantar con Docker Compose
+
+```bash
+docker compose up -d
+```
+
+La aplicación estará disponible en **http://localhost:8080**
+
+En el primer arranque, el `BackgroundService` sincroniza automáticamente los datos de IGDB. Dependiendo del año, puede tardar unos minutos.
+
+### 4. Registrarse
+
+Para crear una cuenta necesitas el `REGISTRATION_SECRET_CODE` que configuraste en el `.env`.
+
+## Desarrollo local
+
+### Backend (.NET)
+
+```bash
+cd src/GameList.Web
+dotnet run
+```
+
+> Requiere PostgreSQL en `localhost:5432`. Puedes levantarlo solo con:
+> ```bash
+> docker compose up -d db
+> ```
+
+### Frontend (Vue + Vite)
+
+```bash
+cd src/GameList.Web/ClientApp
+npm install
+npm run dev
+```
+
+El servidor de desarrollo de Vite hace proxy al backend en `http://localhost:5000`.
+
+### Tests
+
+```bash
+dotnet test
+```
+
+Los tests de integración usan **Testcontainers** — levantan un contenedor de PostgreSQL automáticamente, no necesitas nada más.
+
+## Variables de entorno
+
+| Variable | Descripción | Obligatoria |
+|---|---|---|
+| `IGDB_CLIENT_ID` | Client ID de la app de Twitch | ✅ |
+| `IGDB_CLIENT_SECRET` | Client Secret de la app de Twitch | ✅ |
+| `REGISTRATION_SECRET_CODE` | Código necesario para registrarse | ✅ |
+| `DB_PASSWORD` | Contraseña de PostgreSQL | ⬜ (tiene valor por defecto) |
+
+## Licencia
+
+MIT
