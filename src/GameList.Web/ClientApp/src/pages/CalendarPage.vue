@@ -13,10 +13,6 @@
             :selected-platform-id="selectedPlatformId"
             @platform-changed="onPlatformChanged"
           />
-          <AudienceFilter
-            :selected="selectedIsIndie"
-            @audience-changed="onAudienceChanged"
-          />
           <div class="search-box">
             <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -96,7 +92,6 @@ import { getStatus, addFavorite, removeFavorite, markPurchased, unmarkPurchased 
 import { useAuth } from '../stores/auth.js'
 import MonthNavigator from '../components/MonthNavigator.vue'
 import PlatformFilter from '../components/PlatformFilter.vue'
-import AudienceFilter from '../components/AudienceFilter.vue'
 import DayCell from '../components/DayCell.vue'
 import DayReleasesModal from '../components/DayReleasesModal.vue'
 import GameDetailModal from '../components/GameDetailModal.vue'
@@ -113,7 +108,6 @@ const auth = useAuth()
 const currentYear = new Date().getFullYear()
 const selectedMonth = ref(parseInt(route.query.month) || new Date().getMonth() + 1)
 const selectedPlatformId = ref(null)
-const selectedIsIndie = ref(null)
 const searchTerm = ref('')
 
 const isLoading = ref(true)
@@ -150,7 +144,7 @@ function releasesForDay(dateStr) {
 async function loadReleases() {
   isLoading.value = true
   try {
-    calendarDays.value = await getReleases(currentYear, selectedMonth.value, selectedPlatformId.value, selectedIsIndie.value, auth.authHeader)
+    calendarDays.value = await getReleases(currentYear, selectedMonth.value, selectedPlatformId.value, auth.authHeader)
   } finally {
     isLoading.value = false
   }
@@ -190,11 +184,6 @@ async function onMonthChanged(month) {
 
 async function onPlatformChanged(id) {
   selectedPlatformId.value = id
-  await loadReleases()
-}
-
-async function onAudienceChanged(isIndie) {
-  selectedIsIndie.value = isIndie
   await loadReleases()
 }
 

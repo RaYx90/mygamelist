@@ -1,9 +1,8 @@
 ﻿const BASE = '/api'
 
-export async function getReleases(year, month, platformId, isIndie, authHeader = {}) {
+export async function getReleases(year, month, platformId, authHeader = {}) {
   const params = new URLSearchParams({ year, month })
   if (platformId != null) params.set('platformId', platformId)
-  if (isIndie != null) params.set('isIndie', isIndie)
   const res = await fetch(`${BASE}/releases?${params}`, { headers: { ...authHeader } })
   if (!res.ok) throw new Error(`getReleases failed: ${res.status}`)
   return res.json()

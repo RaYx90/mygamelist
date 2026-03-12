@@ -55,7 +55,8 @@ internal sealed class IgdbDataProviderAdapter : IGameDataProvider
                 ReleaseDateFields +
                 $"where date >= {startUnix} & date <= {endUnix}" +
                 $" & platform = ({AllowedPlatforms})" +
-                $" & game != null & platform != null;" +
+                $" & game != null & platform != null" +
+                $" & (game.themes = null | game.themes != (38));" +
                 $" limit {pageSize}; offset {offset};";
 
             var response = await _httpClient.PostAsync(
