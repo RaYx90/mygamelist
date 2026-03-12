@@ -12,7 +12,6 @@ Calendario de lanzamientos de videojuegos para el año en curso, con sincronizac
 - 📅 Calendario mensual con todos los lanzamientos del año
 - 🔍 Búsqueda por nombre de juego en tiempo real
 - 🎯 Filtro por plataforma (PC, PS5, Xbox Series X|S, Switch, Switch 2)
-- 👤 Filtro indie / no indie
 - 🏷️ Cada juego muestra si es exclusivo o multiplataforma
 - ❤️ Favoritos y marcado de juegos comprados (requiere cuenta)
 - 👥 Vista de grupo: ve qué juegos quieren o tienen comprados tus amigos
@@ -89,8 +88,8 @@ La aplicación estará disponible en **http://localhost:8080**
 
 En el primer arranque ocurre lo siguiente:
 1. **LibreTranslate** descarga los modelos de idioma (inglés + español) — puede tardar 2-3 minutos.
-2. Una vez listo, el `BackgroundService` sincroniza los juegos desde IGDB.
-3. Las descripciones se traducen automáticamente al español durante la sincronización.
+2. Una vez listo, el `SyncBackgroundService` sincroniza los juegos desde IGDB.
+3. El `TranslationBackgroundService` traduce las descripciones al español en segundo plano (20 juegos cada 15 segundos) sin bloquear el sync.
 
 > **Nota:** LibreTranslate se autoaloja en el propio Docker Compose — no requiere cuenta ni API key externa.
 

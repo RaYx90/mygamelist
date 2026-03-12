@@ -5,11 +5,29 @@ using Microsoft.Extensions.Logging;
 
 namespace GameList.Infrastructure.BackgroundServices;
 
+/// <summary>
+/// Servicio en segundo plano que traduce automáticamente las descripciones de juegos del inglés al español.
+/// Se ejecuta de forma independiente al sync para no saturar LibreTranslate con ~7000 juegos a la vez.
+/// </summary>
+/// <remarks>
+/// Parámetros de control de carga:
+/// - <c>BatchSize = 20</c>: juegos traducidos por tick. Valor bajo para no saturar LibreTranslate.
+/// - <c>BatchInterval = 15s</c>: espera entre ticks. Permite a LibreTranslate recuperarse entre lotes.
+///
+/// Por qué usa IServiceScopeFactory:
+/// Los BackgroundServices son Singleton, pero DbContext e ITranslationService tienen lifetime Scoped.
+/// Para evitar el error "Cannot resolve scoped service from singleton", se crea un scope nuevo
+/// por cada tick del timer y se resuelven los servicios dentro de ese scope.
+/// </remarks>
 public sealed class TranslationBackgroundService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<TranslationBackgroundService> _logger;
+
+    // Intervalo entre lotes — suficiente para que LibreTranslate no se sature.
     private static readonly TimeSpan BatchInterval = TimeSpan.FromSeconds(15);
+
+    // Número de juegos por lote — equilibrio entre velocidad y carga de CPU en el contenedor de traducción.
     private const int BatchSize = 20;
 
     public TranslationBackgroundService(
@@ -33,21 +51,30 @@ public sealed class TranslationBackgroundService : BackgroundService
         }
         catch (OperationCanceledException)
         {
-            _logger.LogInformation("Translation background service stopping.");
+            // Se lanza al cancelar el token de parada — es el comportamiento esperado al apagar la app.
+            _logger.LogInformation("Servicio de traducción en segundo plano detenido.");
         }
     }
 
+    /// <summary>
+    /// Obtiene hasta <c>BatchSize</c> juegos sin traducir, los traduce en un solo request
+    /// a LibreTranslate y persiste los resultados en la BD.
+    /// Si LibreTranslate falla, el error se registra y se omite el lote (se reintentará en el siguiente tick).
+    /// </summary>
     private async Task TranslateBatchAsync(CancellationToken cancellationToken)
     {
         try
         {
+            // Scope por tick — necesario porque DbContext tiene lifetime Scoped (ver remarks de la clase).
             await using var scope = _scopeFactory.CreateAsyncScope();
             var gameRepository = scope.ServiceProvider.GetRequiredService<IGameRepository>();
             var translationService = scope.ServiceProvider.GetRequiredService<ITranslationService>();
 
+            // Juegos con Summary en inglés pero sin SummaryEs todavía.
             var games = await gameRepository.GetUntranslatedAsync(BatchSize, cancellationToken);
-            if (games.Count == 0) return;
+            if (games.Count == 0) return; // Nada que traducir — salida rápida.
 
+            // Envía todos los summaries en un solo request batch a LibreTranslate.
             var translations = await translationService.TranslateBatchAsync(
                 games.Select(g => g.Summary!).ToList(), "ES", cancellationToken);
 
@@ -64,13 +91,16 @@ public sealed class TranslationBackgroundService : BackgroundService
 
             if (translated > 0)
             {
+                // Un solo SaveChangesAsync por tick en lugar de uno por juego.
                 await gameRepository.SaveChangesAsync(cancellationToken);
-                _logger.LogInformation("Translated {Count} game summaries", translated);
+                _logger.LogInformation("Traducidos {Count} summaries de juegos", translated);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Translation batch failed.");
+            // Fallo silencioso: se registra el error pero el servicio sigue corriendo.
+            // El lote fallido se reintentará en el siguiente tick (15s).
+            _logger.LogError(ex, "Fallo en el lote de traducción.");
         }
     }
 }

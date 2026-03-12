@@ -6,6 +6,10 @@ using MediatR;
 
 namespace GameList.Application.Features.Social.Commands;
 
+/// <summary>
+/// Crea un nuevo grupo social, genera un código de invitación único
+/// y añade automáticamente al creador como primer miembro.
+/// </summary>
 public sealed class CreateGroupHandler : IRequestHandler<CreateGroupCommand, GroupDto>
 {
     private readonly IGroupRepository _groupRepository;
@@ -22,13 +26,23 @@ public sealed class CreateGroupHandler : IRequestHandler<CreateGroupCommand, Gro
         var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken)
             ?? throw new InvalidOperationException("User not found.");
 
+        // Generación del código de invitación:
+        //   1. Se generan 6 bytes aleatorios criptográficamente seguros (48 bits de entropía).
+        //   2. Se codifican en Base64 → 8 caracteres (cada 6 bytes producen 8 chars en Base64).
+        //   3. Se reemplazan los caracteres especiales de Base64 (+, /, =) por letras (A, B, C)
+        //      para que el código sea URL-safe y fácil de escribir sin necesidad de escapado.
+        //   4. Se toman los primeros 8 caracteres y se pasan a mayúsculas.
+        // Resultado: código de 8 caracteres alfanuméricos, ej. "X7KQM2RA".
         var inviteCode = Convert.ToBase64String(RandomNumberGenerator.GetBytes(6))
             .Replace("+", "A").Replace("/", "B").Replace("=", "C")[..8].ToUpperInvariant();
 
         var group = GroupEntity.Create(request.GroupName, inviteCode);
         await _groupRepository.AddAsync(group, cancellationToken);
+
+        // Se guarda primero para que EF Core asigne group.Id antes de usarlo como FK en JoinGroup.
         await _groupRepository.SaveChangesAsync(cancellationToken);
 
+        // El creador se convierte automáticamente en el primer miembro del grupo.
         user.JoinGroup(group.Id);
         _userRepository.Update(user);
         await _userRepository.SaveChangesAsync(cancellationToken);
