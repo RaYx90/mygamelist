@@ -3,10 +3,11 @@ using GameList.Api.Tests.Common;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using MediatR;
+using System.Net.Http.Headers;
 
 namespace GameList.Api.Tests.Endpoints;
 
-public sealed class ReleasesEndpointTests : IClassFixture<CustomWebApplicationFactory>
+public sealed class ReleasesEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAsyncLifetime
 {
     private readonly HttpClient _client;
     private readonly CustomWebApplicationFactory _factory;
@@ -16,6 +17,15 @@ public sealed class ReleasesEndpointTests : IClassFixture<CustomWebApplicationFa
         _factory = factory;
         _client = factory.CreateClient();
     }
+
+    // Los endpoints de lanzamientos requieren autenticación JWT.
+    public async Task InitializeAsync()
+    {
+        var (token, _) = await TestHelpers.RegisterAndLoginAsync(_client);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     private async Task SeedDataAsync()
     {

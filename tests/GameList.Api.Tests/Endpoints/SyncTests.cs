@@ -74,4 +74,28 @@ public sealed class SyncTests : IClassFixture<CustomWebApplicationFactory>
 
         exclusiveRelease.ReleaseType.Should().Be(ReleaseTypeEnum.Exclusive);
     }
+
+    [Fact]
+    public async Task SyncGames_SegundoSync_NoDuplicaJuegosNiPlataformas()
+    {
+        // El sync usa upsert (insert-or-update), por lo que ejecutarlo dos veces
+        // debe producir el mismo número de registros que ejecutarlo una sola vez.
+        using var scope = _factory.Services.CreateScope();
+        var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.EnsureCreatedAsync();
+
+        // Primer sync
+        await sender.Send(new SyncGamesCommand(DateTime.UtcNow.Year));
+        var gamesAfterFirst = await db.Games.CountAsync();
+        var platformsAfterFirst = await db.Platforms.CountAsync();
+
+        // Segundo sync — los datos de FakeGameDataProvider son idénticos
+        await sender.Send(new SyncGamesCommand(DateTime.UtcNow.Year));
+        var gamesAfterSecond = await db.Games.CountAsync();
+        var platformsAfterSecond = await db.Platforms.CountAsync();
+
+        gamesAfterSecond.Should().Be(gamesAfterFirst);
+        platformsAfterSecond.Should().Be(platformsAfterFirst);
+    }
 }
