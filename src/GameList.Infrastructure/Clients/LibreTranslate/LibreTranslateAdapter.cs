@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
-using GameList.Application.Common.Interfaces;
+using GameList.Domain.Ports;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -27,40 +27,37 @@ internal sealed class LibreTranslateAdapter : ITranslationService
         string targetLanguage,
         CancellationToken cancellationToken = default)
     {
-        var results = new string?[texts.Count];
+        if (texts.Count == 0) return [];
 
-        for (int i = 0; i < texts.Count; i++)
+        try
         {
-            try
-            {
-                var response = await _httpClient.PostAsJsonAsync(
-                    $"{_options.ApiUrl}/translate",
-                    new
-                    {
-                        q = texts[i],
-                        source = "en",
-                        target = targetLanguage.ToLowerInvariant(),
-                        format = "text"
-                    },
-                    cancellationToken);
+            var response = await _httpClient.PostAsJsonAsync(
+                $"{_options.ApiUrl}/translate",
+                new
+                {
+                    q = texts,
+                    source = "en",
+                    target = targetLanguage.ToLowerInvariant(),
+                    format = "text"
+                },
+                cancellationToken);
 
-                response.EnsureSuccessStatusCode();
+            response.EnsureSuccessStatusCode();
 
-                var body = await response.Content
-                    .ReadFromJsonAsync<LibreTranslateResponse>(cancellationToken: cancellationToken);
+            var body = await response.Content
+                .ReadFromJsonAsync<LibreTranslateBatchResponse>(cancellationToken: cancellationToken);
 
-                results[i] = body?.TranslatedText;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex,
-                    "LibreTranslate failed for text at index {Index}. Skipping.", i);
-            }
+            if (body?.TranslatedTexts is not null && body.TranslatedTexts.Count == texts.Count)
+                return body.TranslatedTexts.Select(t => (string?)t).ToArray();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "LibreTranslate batch of {Count} texts failed. Skipping.", texts.Count);
         }
 
-        return results;
+        return texts.Select(_ => (string?)null).ToArray();
     }
 
-    private sealed record LibreTranslateResponse(
-        [property: JsonPropertyName("translatedText")] string TranslatedText);
+    private sealed record LibreTranslateBatchResponse(
+        [property: JsonPropertyName("translatedText")] List<string> TranslatedTexts);
 }

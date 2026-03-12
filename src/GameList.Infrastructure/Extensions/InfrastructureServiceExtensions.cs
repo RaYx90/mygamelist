@@ -70,8 +70,9 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IGameFavoriteRepository, GameFavoriteRepository>();
         services.AddScoped<IGamePurchaseRepository, GamePurchaseRepository>();
 
-        // Background service
+        // Background services
         services.AddHostedService<SyncBackgroundService>();
+        services.AddHostedService<TranslationBackgroundService>();
 
         return services;
     }

@@ -2,11 +2,16 @@ services:
   translate:
     image: libretranslate/libretranslate
     container_name: gamelist-translate
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: "800M"
     environment:
       LT_LOAD_ONLY: "en,es"
       LT_DISABLE_WEB_UI: "true"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:5000/languages || exit 1"]
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/languages')\" 2>/dev/null || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 20
@@ -16,6 +21,11 @@ services:
   db:
     image: postgres:17-alpine
     container_name: gamelist-db
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: "128M"
     environment:
       POSTGRES_DB: gamelist
       POSTGRES_USER: gamelist
@@ -37,6 +47,11 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: gamelist-web
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "256M"
     ports:
       - "8080:8080"
     environment:

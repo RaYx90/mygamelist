@@ -15,6 +15,9 @@
 certs/
 *.conf.bak
 
+# Claude Code
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db

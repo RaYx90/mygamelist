@@ -25,6 +25,13 @@ internal sealed class GameRepository : IGameRepository
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<GameEntity>> GetUntranslatedAsync(int limit, CancellationToken cancellationToken = default) =>
+        await _context.Games
+            .Where(g => g.Summary != null && g.Summary != "" && (g.SummaryEs == null || g.SummaryEs == ""))
+            .OrderBy(g => g.Id)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+
     public async Task AddAsync(GameEntity game, CancellationToken cancellationToken = default) =>
         await _context.Games.AddAsync(game, cancellationToken);
 

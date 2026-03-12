@@ -1,4 +1,3 @@
-using GameList.Application.Common.Interfaces;
 using GameList.Domain.Entities;
 using GameList.Domain.Enums;
 using GameList.Domain.Ports;
@@ -14,7 +13,6 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
     private readonly IGameRepository _gameRepository;
     private readonly IPlatformRepository _platformRepository;
     private readonly IGameReleaseRepository _releaseRepository;
-    private readonly ITranslationService _translationService;
     private readonly ILogger<SyncGamesHandler> _logger;
 
     public SyncGamesHandler(
@@ -22,14 +20,12 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
         IGameRepository gameRepository,
         IPlatformRepository platformRepository,
         IGameReleaseRepository releaseRepository,
-        ITranslationService translationService,
         ILogger<SyncGamesHandler> logger)
     {
         _dataProvider = dataProvider;
         _gameRepository = gameRepository;
         _platformRepository = platformRepository;
         _releaseRepository = releaseRepository;
-        _translationService = translationService;
         _logger = logger;
     }
 
@@ -100,31 +96,6 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
             }
 
             await _gameRepository.SaveChangesAsync(cancellationToken);
-
-            // 2b — Translate summaries that don't yet have a Spanish version
-            var gamesToTranslate = gameCache.Values
-                .Where(g => !string.IsNullOrWhiteSpace(g.Summary) && string.IsNullOrWhiteSpace(g.SummaryEs))
-                .ToList();
-
-            if (gamesToTranslate.Count > 0)
-            {
-                _logger.LogInformation("Translating {Count} game summaries to Spanish", gamesToTranslate.Count);
-
-                var texts = gamesToTranslate.Select(g => g.Summary!).ToList();
-                var translations = await _translationService.TranslateBatchAsync(texts, "ES", cancellationToken);
-
-                for (int i = 0; i < gamesToTranslate.Count; i++)
-                {
-                    if (translations[i] is not null)
-                    {
-                        gamesToTranslate[i].UpdateSummaryEs(translations[i]);
-                        _gameRepository.Update(gamesToTranslate[i]);
-                    }
-                }
-
-                await _gameRepository.SaveChangesAsync(cancellationToken);
-                _logger.LogInformation("Translation complete");
-            }
 
             // 3 — Rebuild releases (delete + re-insert for simplicity)
             var processedGameIds = gameCache.Values.Select(g => g.Id).ToList();

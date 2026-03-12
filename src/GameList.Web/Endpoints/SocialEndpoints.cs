@@ -41,7 +41,11 @@ public static class SocialEndpoints
 
     private static async Task<Ok<object>> GetStatus(ISender sender, ClaimsPrincipal user, string? gameIds, CancellationToken ct)
     {
-        var ids = gameIds?.Split(',').Select(int.Parse).ToList() ?? [];
+        var ids = gameIds?.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => int.TryParse(s.Trim(), out var id) ? id : (int?)null)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .ToList() ?? [];
         var result = await sender.Send(new GetUserGameStatusQuery(GetUserId(user), ids), ct);
         return TypedResults.Ok((object)result);
     }
