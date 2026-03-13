@@ -3,9 +3,11 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import './assets/app.css'
 import App from './App.vue'
 import router from './router/index.js'
-import { useAuth } from './stores/auth.js'
+import { useAuth } from './composables/useAuth.js'
 
-const auth = useAuth()
-auth.init()
-
-createApp(App).use(router).mount('#app')
+// Verifica la sesión activa (cookie HttpOnly) antes de montar la app,
+// para que el router guard tenga el estado de auth ya poblado.
+;(async () => {
+  await useAuth().init()
+  createApp(App).use(router).mount('#app')
+})()

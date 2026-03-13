@@ -23,8 +23,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import ReleaseCard from './ReleaseCard.vue'
+import { computed, toRef } from 'vue'
+import ReleaseCard from '../game/ReleaseCard.vue'
+import { useGameSocialData } from '../../composables/useGameSocialData.js'
 
 const props = defineProps({
   date: { type: String, required: true },
@@ -41,17 +42,5 @@ const weekdayName = computed(() => {
   return WEEKDAYS[new Date(y, m - 1, d).getDay()]
 })
 
-function getGameSocialData(gameId) {
-  if (!props.gameStatus) return { favCount: 0, purchasedCount: 0, isFavorite: false, isPurchased: false }
-  const isFavorite = props.gameStatus.myFavorites?.includes(gameId) ?? false
-  const isPurchased = props.gameStatus.myPurchases?.includes(gameId) ?? false
-  const otherFavs = props.gameStatus.favoritedCountInGroup?.[gameId] ?? 0
-  const otherPurchases = props.gameStatus.purchasedByInGroup?.[gameId]?.length ?? 0
-  return {
-    favCount: (isFavorite ? 1 : 0) + otherFavs,
-    purchasedCount: (isPurchased ? 1 : 0) + otherPurchases,
-    isFavorite,
-    isPurchased
-  }
-}
+const { getForGame: getGameSocialData } = useGameSocialData(toRef(props, 'gameStatus'))
 </script>

@@ -35,7 +35,7 @@ public sealed class GroupEntity
     /// <param name="inviteCode">Código de invitación pregenerado (ver <c>CreateGroupHandler</c>).</param>
     public static GroupEntity Create(string name, string inviteCode)
     {
-        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Group name cannot be empty.", nameof(name));
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("El nombre del grupo no puede estar vacío.", nameof(name));
         return new GroupEntity { Name = name.Trim(), InviteCode = inviteCode, CreatedAt = DateTime.UtcNow };
     }
 }

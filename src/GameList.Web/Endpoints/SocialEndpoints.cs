@@ -102,7 +102,7 @@ public static class SocialEndpoints
     private static async Task<Results<Ok<object>, BadRequest<string>>> JoinGroup(ISender sender, ClaimsPrincipal user, JoinGroupRequest body, CancellationToken ct)
     {
         var result = await sender.Send(new JoinGroupCommand(GetUserId(user), body.InviteCode), ct);
-        if (result is null) return TypedResults.BadRequest("Codigo de invitacion invalido.");
+        if (result is null) return TypedResults.BadRequest("Código de invitación inválido.");
         return TypedResults.Ok((object)result);
     }
 }

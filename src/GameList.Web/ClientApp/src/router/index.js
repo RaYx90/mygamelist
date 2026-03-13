@@ -3,6 +3,7 @@ import CalendarPage from '../pages/CalendarPage.vue'
 import LoginPage from '../pages/LoginPage.vue'
 import RegisterPage from '../pages/RegisterPage.vue'
 import GroupPage from '../pages/GroupPage.vue'
+import { useAuth } from '../composables/useAuth.js'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -15,10 +16,8 @@ const router = createRouter({
 })
 
 router.beforeEach((to, _from, next) => {
-  if (to.meta.requiresAuth) {
-    const raw = localStorage.getItem('gl_user')
-    if (!raw) return next(`/login?redirect=${encodeURIComponent(to.fullPath)}`)
-  }
+  if (to.meta.requiresAuth && !useAuth().isLoggedIn.value)
+    return next(`/login?redirect=${encodeURIComponent(to.fullPath)}`)
   next()
 })
 

@@ -33,6 +33,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
+        // Lee el JWT desde la cookie HttpOnly gl_token (más seguro que localStorage).
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                if (ctx.Request.Cookies.TryGetValue("gl_token", out var cookieToken))
+                    ctx.Token = cookieToken;
+                return Task.CompletedTask;
+            }
+        };
     });
 builder.Services.AddAuthorization();
 

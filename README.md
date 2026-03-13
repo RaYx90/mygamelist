@@ -1,6 +1,6 @@
 # 🎮 GameList
 
-Calendario de lanzamientos de videojuegos para el año en curso, con sincronización diaria desde la API de IGDB (Twitch). Filtra por plataforma, tipo de público (indie / no indie) o busca un juego concreto.
+Calendario de lanzamientos de videojuegos para el año en curso, con sincronización diaria desde la API de IGDB (Twitch). Filtra por plataforma o busca un juego concreto. Solo juegos AAA — los indie se excluyen del sync.
 
 ![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet)
 ![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs)
@@ -9,12 +9,13 @@ Calendario de lanzamientos de videojuegos para el año en curso, con sincronizac
 
 ## Características
 
-- 📅 Calendario mensual con todos los lanzamientos del año
+- 📅 Calendario mensual con todos los lanzamientos del año (solo juegos AAA)
 - 🔍 Búsqueda por nombre de juego en tiempo real
 - 🎯 Filtro por plataforma (PC, PS5, Xbox Series X|S, Switch, Switch 2)
 - 🏷️ Cada juego muestra si es exclusivo o multiplataforma
 - ❤️ Favoritos y marcado de juegos comprados (requiere cuenta)
 - 👥 Vista de grupo: ve qué juegos quieren o tienen comprados tus amigos
+- 🔒 Autenticación segura — JWT en cookie HttpOnly (sin localStorage)
 - 🔄 Sincronización automática diaria con IGDB
 - 🌐 Descripciones de juegos traducidas al español automáticamente
 - 📱 Diseño responsive — cuadrícula 7 columnas en escritorio, lista en móvil
@@ -31,9 +32,9 @@ Calendario de lanzamientos de videojuegos para el año en curso, con sincronizac
 | Fuente de datos | IGDB API (Twitch) |
 | Traducción | LibreTranslate (contenedor Docker autoalojado) |
 | Resiliencia | Polly — retry con backoff exponencial |
-| Auth | JWT |
+| Auth | JWT en cookie HttpOnly (`gl_token`) — SameSite=Strict |
 | Despliegue | Docker + Docker Compose |
-| Tests | xUnit + WebApplicationFactory + Testcontainers |
+| Tests | xUnit + WebApplicationFactory + Testcontainers + NSubstitute |
 
 ## Arquitectura
 
@@ -45,8 +46,16 @@ src/
 ├── GameList.Application/     → Casos de uso (Queries, Commands, DTOs, Mappers)
 ├── GameList.Infrastructure/  → Adaptadores (EF Core, cliente IGDB, BackgroundService)
 └── GameList.Web/             → API mínima, Vue SPA, raíz de DI
+    └── ClientApp/src/
+        ├── api/              → httpClient factory, gameApi, socialApi, authApi
+        ├── composables/      → useAuth, useCalendar, useGameStatus, useGameSocialData, useFormatDate
+        ├── pages/            → CalendarPage, GroupPage, LoginPage, RegisterPage
+        └── components/
+            ├── calendar/     → DayCell, DayReleasesModal, MonthNavigator
+            ├── game/         → GameDetailModal, ReleaseCard
+            └── filters/      → PlatformFilter
 tests/
-└── GameList.Api.Tests/       → Tests de integración (WebApplicationFactory)
+└── GameList.Api.Tests/       → 69 tests — integración (WebApplicationFactory + Testcontainers) + unitarios (NSubstitute)
 ```
 
 ## Requisitos
@@ -127,7 +136,7 @@ El servidor de desarrollo de Vite hace proxy al backend en `http://localhost:500
 dotnet test
 ```
 
-Los tests de integración usan **Testcontainers** — levantan un contenedor de PostgreSQL automáticamente, no necesitas nada más.
+Los tests de integración usan **Testcontainers** — levantan un contenedor de PostgreSQL automáticamente, no necesitas nada más. 69 tests en total (39 integración + 30 unitarios).
 
 ## Variables de entorno
 

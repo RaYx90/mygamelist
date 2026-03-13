@@ -47,9 +47,9 @@ public sealed class UserEntity
     /// </summary>
     public static UserEntity Create(string username, string email, string passwordHash)
     {
-        if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException("Username cannot be empty.", nameof(username));
-        if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException("Email cannot be empty.", nameof(email));
-        if (string.IsNullOrWhiteSpace(passwordHash)) throw new ArgumentException("Password hash cannot be empty.", nameof(passwordHash));
+        if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException("El nombre de usuario no puede estar vacío.", nameof(username));
+        if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException("El email no puede estar vacío.", nameof(email));
+        if (string.IsNullOrWhiteSpace(passwordHash)) throw new ArgumentException("El hash de contraseña no puede estar vacío.", nameof(passwordHash));
         return new UserEntity { Username = username.Trim(), Email = email.Trim().ToLowerInvariant(), PasswordHash = passwordHash, CreatedAt = DateTime.UtcNow };
     }
 

@@ -4,7 +4,8 @@ export async function register(username, email, password, inviteCode) {
   const res = await fetch(`${BASE}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, email, password, inviteCode })
+    body: JSON.stringify({ username, email, password, inviteCode }),
+    credentials: 'same-origin'
   })
   if (res.status === 409) {
     const err = await res.json()
@@ -22,7 +23,8 @@ export async function login(email, password) {
   const res = await fetch(`${BASE}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({ email, password }),
+    credentials: 'same-origin'
   })
   if (res.status === 401) throw new Error('Email o contraseña incorrectos')
   if (!res.ok) throw new Error('Error al iniciar sesión')

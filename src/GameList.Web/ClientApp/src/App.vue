@@ -5,11 +5,11 @@
       Lanzamientos <span class="year-badge">{{ currentYear }}</span>
     </div>
     <nav class="app-nav">
-      <RouterLink v-if="auth.isLoggedIn" to="/grupo" class="nav-link">Grupo</RouterLink>
-      <RouterLink v-if="!auth.isLoggedIn" to="/login" class="nav-link">Entrar</RouterLink>
-      <RouterLink v-if="!auth.isLoggedIn" to="/register" class="nav-link">Registrarse</RouterLink>
-      <button v-if="auth.isLoggedIn" class="nav-link btn-link" @click="handleLogout">
-        {{ auth.state.username }} · Salir
+      <RouterLink v-if="isLoggedIn" to="/grupo" class="nav-link">Grupo</RouterLink>
+      <RouterLink v-if="!isLoggedIn" to="/login" class="nav-link">Entrar</RouterLink>
+      <RouterLink v-if="!isLoggedIn" to="/register" class="nav-link">Registrarse</RouterLink>
+      <button v-if="isLoggedIn" class="nav-link btn-link" @click="handleLogout">
+        {{ username }} · Salir
       </button>
     </nav>
   </header>
@@ -19,14 +19,14 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { useAuth } from './stores/auth.js'
+import { useAuth } from './composables/useAuth.js'
 
 const router = useRouter()
-const auth = useAuth()
+const { isLoggedIn, username, logout } = useAuth()
 const currentYear = new Date().getFullYear()
 
-function handleLogout() {
-  auth.logout()
+async function handleLogout() {
+  await logout()
   router.push('/login')
 }
 </script>

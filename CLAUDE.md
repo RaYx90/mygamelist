@@ -163,6 +163,8 @@ All code in **English** with **type suffixes**:
 - [x] Docker & docker-compose (3 services)
 - [x] Integration + unit tests (69 tests)
 - [x] IGDB configuration & token refresh
+- [x] Security: JWT in HttpOnly cookie (gl_token) — no localStorage
+- [x] Vue refactor: composables, httpClient factory, subdirectory components, no stores/
 
 ### Decisions Log
 | Date | Decision |
@@ -175,3 +177,6 @@ All code in **English** with **type suffixes**:
 | 2026-03-09 | Indie games excluded from IGDB sync and removed from frontend |
 | 2026-03-10 | Social features: favorites, purchases, groups (create/join), group insights |
 | 2026-03-13 | 69 tests passing (39 integration + 30 unit) |
+| 2026-03-13 | JWT moved from localStorage to HttpOnly cookie gl_token — /me + /logout endpoints added |
+| 2026-03-13 | Vue refactored: useCalendar, useGameStatus, useGameSocialData, useFormatDate composables; httpClient.js factory; components/ reorganized in calendar/, game/, filters/ subdirs |
+| 2026-03-13 | All backend error messages translated to Spanish |

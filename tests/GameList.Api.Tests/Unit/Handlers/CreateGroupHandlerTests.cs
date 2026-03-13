@@ -33,7 +33,7 @@ public sealed class CreateGroupHandlerTests
             new CreateGroupCommand(999, "Mi Grupo"), CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*not found*");
+            .WithMessage("*no encontrado*");
     }
 
     [Fact]

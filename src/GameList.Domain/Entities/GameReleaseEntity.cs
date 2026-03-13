@@ -50,10 +50,10 @@ public sealed class GameReleaseEntity
         string? region = null)
     {
         if (gameId <= 0)
-            throw new ArgumentException("GameId must be a positive number.", nameof(gameId));
+            throw new ArgumentException("El GameId debe ser un número positivo.", nameof(gameId));
 
         if (platformId <= 0)
-            throw new ArgumentException("PlatformId must be a positive number.", nameof(platformId));
+            throw new ArgumentException("El PlatformId debe ser un número positivo.", nameof(platformId));
 
         return new GameReleaseEntity
         {

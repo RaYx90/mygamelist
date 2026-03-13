@@ -22,7 +22,7 @@ public sealed class AuthEndpointTests : IClassFixture<CustomWebApplicationFactor
     // ── Registro ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Register_ConCodigoValido_Devuelve200ConTokenYUserId()
+    public async Task Register_ConCodigoValido_Devuelve200ConCookieYUserId()
     {
         var id = Guid.NewGuid().ToString("N")[..12];
 
@@ -35,8 +35,15 @@ public sealed class AuthEndpointTests : IClassFixture<CustomWebApplicationFactor
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // El token se emite como cookie HttpOnly, no en el cuerpo.
+        var cookieHeader = response.Headers.GetValues("Set-Cookie")
+            .First(h => h.StartsWith("gl_token=", StringComparison.Ordinal));
+        cookieHeader.ToLowerInvariant().Should().Contain("httponly");
+        var token = cookieHeader.Split(';')[0]["gl_token=".Length..];
+        token.Should().NotBeNullOrEmpty();
+
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        json.GetProperty("token").GetString().Should().NotBeNullOrEmpty();
         json.GetProperty("userId").GetInt32().Should().BePositive();
         json.GetProperty("username").GetString().Should().StartWith("user");
     }
@@ -106,8 +113,12 @@ public sealed class AuthEndpointTests : IClassFixture<CustomWebApplicationFactor
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        json.GetProperty("token").GetString().Should().NotBeNullOrEmpty();
+
+        // El token se emite como cookie HttpOnly, no en el cuerpo.
+        var cookieHeader = response.Headers.GetValues("Set-Cookie")
+            .First(h => h.StartsWith("gl_token=", StringComparison.Ordinal));
+        var token = cookieHeader.Split(';')[0]["gl_token=".Length..];
+        token.Should().NotBeNullOrEmpty();
     }
 
     [Fact]

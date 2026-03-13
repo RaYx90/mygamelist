@@ -26,7 +26,7 @@ public sealed class DateRangeValue : IEquatable<DateRangeValue>
     public static DateRangeValue Create(DateOnly start, DateOnly end)
     {
         if (end < start)
-            throw new ArgumentException("End date must be greater than or equal to start date.");
+            throw new ArgumentException("La fecha de fin debe ser mayor o igual a la fecha de inicio.");
 
         return new DateRangeValue(start, end);
     }

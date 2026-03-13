@@ -69,7 +69,8 @@
 </template>
 
 <script setup>
-import { useAuth } from '../stores/auth.js'
+import { useAuth } from '../../composables/useAuth.js'
+import { useFormatDate } from '../../composables/useFormatDate.js'
 
 defineProps({
   game: { type: Object, required: true },
@@ -81,11 +82,7 @@ defineProps({
 const emit = defineEmits(['close', 'toggle-favorite', 'toggle-purchase'])
 
 const { isLoggedIn } = useAuth()
-
-function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('es-ES', { month: 'long', day: 'numeric', year: 'numeric' })
-}
+const { formatDate } = useFormatDate()
 </script>
 
 <style scoped>

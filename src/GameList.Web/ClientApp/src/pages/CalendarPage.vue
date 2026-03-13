@@ -6,12 +6,12 @@
           <MonthNavigator
             :selected-month="selectedMonth"
             :current-year="currentYear"
-            @month-changed="onMonthChanged"
+            @month-changed="handleMonthChanged"
           />
           <PlatformFilter
             :platforms="platforms"
             :selected-platform-id="selectedPlatformId"
-            @platform-changed="onPlatformChanged"
+            @platform-changed="handlePlatformChanged"
           />
           <div class="search-box">
             <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -87,92 +87,37 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { getReleases, getPlatforms } from '../api/gameApi.js'
-import { getStatus, addFavorite, removeFavorite, markPurchased, unmarkPurchased } from '../api/socialApi.js'
-import { useAuth } from '../stores/auth.js'
-import MonthNavigator from '../components/MonthNavigator.vue'
-import PlatformFilter from '../components/PlatformFilter.vue'
-import DayCell from '../components/DayCell.vue'
-import DayReleasesModal from '../components/DayReleasesModal.vue'
-import GameDetailModal from '../components/GameDetailModal.vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useCalendar } from '../composables/useCalendar.js'
+import { useGameStatus } from '../composables/useGameStatus.js'
+import MonthNavigator from '../components/calendar/MonthNavigator.vue'
+import PlatformFilter from '../components/filters/PlatformFilter.vue'
+import DayCell from '../components/calendar/DayCell.vue'
+import DayReleasesModal from '../components/calendar/DayReleasesModal.vue'
+import GameDetailModal from '../components/game/GameDetailModal.vue'
 
-const MONTH_NAMES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-]
+const WEEK_DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
 const route = useRoute()
-const router = useRouter()
-const auth = useAuth()
+const {
+  currentYear, selectedMonth, selectedPlatformId, searchTerm,
+  isLoading, platforms, monthName, firstDayColumnStart,
+  allDaysInMonth, filteredCalendarDays, calendarDays,
+  releasesForDay, loadReleases, loadPlatforms,
+  onMonthChanged, onPlatformChanged, onSearchChanged
+} = useCalendar()
 
-const currentYear = new Date().getFullYear()
-const selectedMonth = ref(parseInt(route.query.month) || new Date().getMonth() + 1)
-const selectedPlatformId = ref(null)
-const searchTerm = ref('')
-
-const isLoading = ref(true)
-const calendarDays = ref([])
-const platforms = ref([])
-const gameStatus = ref(null)
+const { gameStatus, loadStatus, toggleFavorite, togglePurchase } = useGameStatus()
 
 const selectedGame = ref(null)
 const selectedDayReleases = ref(null)
 const selectedDayDate = ref(null)
 
-const monthName = computed(() => MONTH_NAMES[selectedMonth.value - 1])
-
-const WEEK_DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
-
-const firstDayColumnStart = computed(() => {
-  const dayOfWeek = new Date(currentYear, selectedMonth.value - 1, 1).getDay()
-  return ((dayOfWeek - 1 + 7) % 7) + 1
-})
-
-const allDaysInMonth = computed(() => {
-  const count = new Date(currentYear, selectedMonth.value, 0).getDate()
-  return Array.from({ length: count }, (_, i) => {
-    const d = i + 1
-    return `${currentYear}-${String(selectedMonth.value).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-  })
-})
-
-const filteredCalendarDays = computed(() => {
-  if (!searchTerm.value) return calendarDays.value
-  const term = searchTerm.value.toLowerCase()
-  return calendarDays.value
-    .map(day => ({ ...day, releases: day.releases.filter(r => r.gameName.toLowerCase().includes(term)) }))
-    .filter(day => day.releases.length > 0)
-})
-
-function releasesForDay(dateStr) {
-  return filteredCalendarDays.value.find(d => d.date === dateStr)?.releases ?? []
-}
-
-async function loadReleases() {
-  isLoading.value = true
-  try {
-    calendarDays.value = await getReleases(currentYear, selectedMonth.value, selectedPlatformId.value, auth.authHeader)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-async function loadStatus() {
-  if (!auth.isLoggedIn) { gameStatus.value = null; return }
-  try {
-    const gameIds = calendarDays.value.flatMap(d => d.releases.map(r => r.gameId))
-    gameStatus.value = await getStatus(auth.authHeader, gameIds)
-  } catch {
-    gameStatus.value = null
-  }
-}
-
 onMounted(async () => {
   await Promise.all([
-    getPlatforms(auth.authHeader).then(p => { platforms.value = p }),
-    loadReleases().then(() => loadStatus())
+    loadPlatforms(),
+    loadReleases().then(() => loadStatus(calendarDays.value.flatMap(d => d.releases.map(r => r.gameId))))
   ])
 })
 
@@ -184,20 +129,13 @@ watch(() => route.query.month, (val) => {
   }
 })
 
-async function onMonthChanged(month) {
-  selectedMonth.value = month
-  router.replace({ query: { ...route.query, month } })
-  await loadReleases()
-  await loadStatus()
+async function handleMonthChanged(month) {
+  await onMonthChanged(month)
+  await loadStatus(calendarDays.value.flatMap(d => d.releases.map(r => r.gameId)))
 }
 
-async function onPlatformChanged(id) {
-  selectedPlatformId.value = id
-  await loadReleases()
-}
-
-function onSearchChanged(term) {
-  searchTerm.value = term
+async function handlePlatformChanged(id) {
+  await onPlatformChanged(id)
 }
 
 function openGameDetail(release) {
@@ -217,37 +155,5 @@ function openDayReleases(dateStr) {
 function closeDayReleases() {
   selectedDayReleases.value = null
   selectedDayDate.value = null
-}
-
-async function toggleFavorite(gameId) {
-  if (!auth.isLoggedIn) return
-  const isFav = gameStatus.value?.myFavorites?.includes(gameId)
-  try {
-    if (isFav) {
-      await removeFavorite(gameId, auth.authHeader)
-      gameStatus.value = { ...gameStatus.value, myFavorites: gameStatus.value.myFavorites.filter(id => id !== gameId) }
-    } else {
-      await addFavorite(gameId, auth.authHeader)
-      gameStatus.value = { ...gameStatus.value, myFavorites: [...(gameStatus.value?.myFavorites ?? []), gameId] }
-    }
-  } catch (e) {
-    console.error('Error toggling favorite', e)
-  }
-}
-
-async function togglePurchase(gameId) {
-  if (!auth.isLoggedIn) return
-  const isPurchased = gameStatus.value?.myPurchases?.includes(gameId)
-  try {
-    if (isPurchased) {
-      await unmarkPurchased(gameId, auth.authHeader)
-      gameStatus.value = { ...gameStatus.value, myPurchases: gameStatus.value.myPurchases.filter(id => id !== gameId) }
-    } else {
-      await markPurchased(gameId, auth.authHeader)
-      gameStatus.value = { ...gameStatus.value, myPurchases: [...(gameStatus.value?.myPurchases ?? []), gameId] }
-    }
-  } catch (e) {
-    console.error('Error toggling purchase', e)
-  }
 }
 </script>

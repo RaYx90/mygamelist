@@ -24,7 +24,7 @@ public sealed class CreateGroupHandler : IRequestHandler<CreateGroupCommand, Gro
     public async Task<GroupDto> Handle(CreateGroupCommand request, CancellationToken cancellationToken)
     {
         var user = await userRepository.GetByIdAsync(request.UserId, cancellationToken)
-            ?? throw new InvalidOperationException("User not found.");
+            ?? throw new InvalidOperationException("Usuario no encontrado.");
 
         // Generación del código de invitación:
         //   1. Se generan 6 bytes aleatorios criptográficamente seguros (48 bits de entropía).

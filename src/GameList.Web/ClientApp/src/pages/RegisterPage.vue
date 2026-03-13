@@ -36,7 +36,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { register as apiRegister } from '../api/authApi.js'
-import { useAuth } from '../stores/auth.js'
+import { useAuth } from '../composables/useAuth.js'
 
 const router = useRouter()
 const auth = useAuth()

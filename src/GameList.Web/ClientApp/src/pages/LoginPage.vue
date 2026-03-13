@@ -28,7 +28,7 @@
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { login as apiLogin } from '../api/authApi.js'
-import { useAuth } from '../stores/auth.js'
+import { useAuth } from '../composables/useAuth.js'
 
 const router = useRouter()
 const route = useRoute()

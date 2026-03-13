@@ -35,11 +35,15 @@ internal static class TestHelpers
 
         response.EnsureSuccessStatusCode();
 
+        // El token JWT ahora se emite como cookie HttpOnly (gl_token), no en el cuerpo.
+        // Extraemos el JWT del header Set-Cookie y lo usamos como Bearer token en los tests,
+        // ya que el middleware JWT sigue aceptando Authorization: Bearer como fallback.
+        var cookieHeader = response.Headers.GetValues("Set-Cookie")
+            .First(h => h.StartsWith("gl_token=", StringComparison.Ordinal));
+        var token = cookieHeader.Split(';')[0]["gl_token=".Length..];
+
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        return (
-            json.GetProperty("token").GetString()!,
-            json.GetProperty("userId").GetInt32()
-        );
+        return (token, json.GetProperty("userId").GetInt32());
     }
 
     /// <summary>

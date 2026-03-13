@@ -3,7 +3,7 @@
     <h2 class="group-title">Mi Grupo</h2>
 
     <!-- Sin grupo -->
-    <div v-if="!auth.state.groupId" class="group-actions">
+    <div v-if="!groupId" class="group-actions">
       <div class="action-card">
         <h4>Crear un grupo nuevo</h4>
         <form @submit.prevent="handleCreate" class="d-flex gap-2">
@@ -30,7 +30,7 @@
     </div>
 
     <!-- Con grupo -->
-    <div v-else>
+    <div v-else-if="groupId">
       <div v-if="groupInfo" class="group-header-card mb-4">
         <h4>{{ groupInfo.name }}</h4>
         <p class="text-muted mb-1">Miembros: {{ groupInfo.memberUsernames.join(', ') }}</p>
@@ -94,7 +94,7 @@
           <div v-else class="insight-cover-placeholder">🎮</div>
           <div class="insight-info">
             <h6 class="insight-name">{{ game.gameName }}</h6>
-            <p v-if="game.releaseDate" class="insight-date">{{ formatDate(game.releaseDate) }}</p>
+            <p v-if="game.releaseDate" class="insight-date">{{ formatDateShort(game.releaseDate) }}</p>
             <div class="insight-badges">
               <span class="badge bg-danger me-1">❤️ {{ game.wantedBy.length }}</span>
               <span class="badge bg-success">✅ {{ game.purchasedBy.length }}</span>
@@ -111,9 +111,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { createGroup, joinGroup, getGroupInsights, getMyGroup, getGroupMembersGames } from '../api/socialApi.js'
-import { useAuth } from '../stores/auth.js'
+import { useAuth } from '../composables/useAuth.js'
+import { useFormatDate } from '../composables/useFormatDate.js'
 
-const auth = useAuth()
+const { groupId, updateGroupId } = useAuth()
+const { formatDateShort } = useFormatDate()
 
 const groupName = ref('')
 const inviteCode = ref('')
@@ -128,16 +130,16 @@ const memberGames = ref([])
 const loadingInsights = ref(false)
 
 onMounted(async () => {
-  if (auth.state.groupId) await loadGroupData()
+  if (groupId.value) await loadGroupData()
 })
 
 async function loadGroupData() {
   loadingInsights.value = true
   try {
     const [info, ins, members] = await Promise.all([
-      getMyGroup(auth.authHeader),
-      getGroupInsights(auth.authHeader),
-      getGroupMembersGames(auth.authHeader)
+      getMyGroup(),
+      getGroupInsights(),
+      getGroupMembersGames()
     ])
     groupInfo.value = info
     insights.value = ins ?? []
@@ -154,8 +156,8 @@ async function handleCreate() {
   createError.value = ''
   creating.value = true
   try {
-    const group = await createGroup(groupName.value, auth.authHeader)
-    auth.updateGroupId(group.id)
+    const group = await createGroup(groupName.value)
+    updateGroupId(group.id)
     await loadGroupData()
   } catch (e) {
     createError.value = e.message
@@ -168,19 +170,14 @@ async function handleJoin() {
   joinError.value = ''
   joining.value = true
   try {
-    const group = await joinGroup(inviteCode.value.toUpperCase(), auth.authHeader)
-    auth.updateGroupId(group.id)
+    const group = await joinGroup(inviteCode.value.toUpperCase())
+    updateGroupId(group.id)
     await loadGroupData()
   } catch (e) {
     joinError.value = 'Código inválido o grupo no encontrado'
   } finally {
     joining.value = false
   }
-}
-
-function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 </script>
 

@@ -69,13 +69,13 @@ public sealed class GameEntity
         bool isIndie = false)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Game name cannot be empty.", nameof(name));
+            throw new ArgumentException("El nombre del juego no puede estar vacío.", nameof(name));
 
         if (string.IsNullOrWhiteSpace(slug))
-            throw new ArgumentException("Game slug cannot be empty.", nameof(slug));
+            throw new ArgumentException("El slug del juego no puede estar vacío.", nameof(slug));
 
         if (igdbId <= 0)
-            throw new ArgumentException("IgdbId must be a positive number.", nameof(igdbId));
+            throw new ArgumentException("El IgdbId debe ser un número positivo.", nameof(igdbId));
 
         var now = DateTime.UtcNow;
         return new GameEntity
@@ -118,7 +118,7 @@ public sealed class GameEntity
         bool isIndie = false)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Game name cannot be empty.", nameof(name));
+            throw new ArgumentException("El nombre del juego no puede estar vacío.", nameof(name));
 
         Name = name.Trim();
         Summary = summary?.Trim();

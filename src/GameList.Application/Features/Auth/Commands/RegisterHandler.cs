@@ -35,9 +35,9 @@ public sealed class RegisterHandler : IRequestHandler<RegisterCommand, UserDto>
     public async Task<UserDto> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         if (await userRepository.ExistsByEmailAsync(request.Email, cancellationToken))
-            throw new ConflictException($"El email '{request.Email}' ya esta registrado.");
+            throw new ConflictException($"El email '{request.Email}' ya está registrado.");
         if (await userRepository.ExistsByUsernameAsync(request.Username, cancellationToken))
-            throw new ConflictException($"El nombre de usuario '{request.Username}' ya esta en uso.");
+            throw new ConflictException($"El nombre de usuario '{request.Username}' ya está en uso.");
 
         var hash = passwordHasher.Hash(request.Password);
         var user = UserEntity.Create(request.Username, request.Email, hash);

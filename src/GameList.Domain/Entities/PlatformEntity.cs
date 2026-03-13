@@ -37,13 +37,13 @@ public sealed class PlatformEntity
         string? abbreviation = null)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Platform name cannot be empty.", nameof(name));
+            throw new ArgumentException("El nombre de la plataforma no puede estar vacío.", nameof(name));
 
         if (string.IsNullOrWhiteSpace(slug))
-            throw new ArgumentException("Platform slug cannot be empty.", nameof(slug));
+            throw new ArgumentException("El slug de la plataforma no puede estar vacío.", nameof(slug));
 
         if (igdbId <= 0)
-            throw new ArgumentException("IgdbId must be a positive number.", nameof(igdbId));
+            throw new ArgumentException("El IgdbId debe ser un número positivo.", nameof(igdbId));
 
         return new PlatformEntity
         {

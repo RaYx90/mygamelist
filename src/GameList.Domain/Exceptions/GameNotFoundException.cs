@@ -9,5 +9,5 @@ public sealed class GameNotFoundException : DomainException
     /// Inicializa la excepción con el identificador del juego no encontrado.
     /// </summary>
     /// <param name="id">Identificador del juego que no existe.</param>
-    public GameNotFoundException(int id) : base($"Game with id '{id}' was not found.") { }
+    public GameNotFoundException(int id) : base($"El juego con ID '{id}' no fue encontrado.") { }
 }
