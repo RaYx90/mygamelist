@@ -18,17 +18,17 @@ namespace GameList.Api.Tests.Endpoints;
 /// </summary>
 public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAsyncLifetime
 {
-    private readonly HttpClient _client;
-    private readonly CustomWebApplicationFactory _factory;
+    private readonly HttpClient client;
+    private readonly CustomWebApplicationFactory factory;
 
     // Estado compartido inicializado antes de cada test por InitializeAsync.
-    private string _token = string.Empty;
-    private int _gameId;
+    private string token = string.Empty;
+    private int gameId;
 
     public SocialEndpointTests(CustomWebApplicationFactory factory)
     {
-        _factory = factory;
-        _client = factory.CreateClient();
+        this.factory = factory;
+        client = factory.CreateClient();
     }
 
     /// <summary>
@@ -37,9 +37,9 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     /// </summary>
     public async Task InitializeAsync()
     {
-        (_token, _) = await TestHelpers.RegisterAndLoginAsync(_client);
+        (token, _) = await TestHelpers.RegisterAndLoginAsync(client);
 
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
 
         // Sync es idempotente — puede ejecutarse varias veces sin problema.
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
@@ -47,21 +47,21 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
 
         // Obtener cualquier juego de la BD para usarlo en los tests.
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        _gameId = await db.Games.Select(g => g.Id).FirstAsync();
+        gameId = await db.Games.Select(g => g.Id).FirstAsync();
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
 
     // Helper: construye un request autenticado con el token del test actual.
     private HttpRequestMessage Req(HttpMethod method, string url, object? body = null) =>
-        TestHelpers.AuthRequest(method, url, _token, body);
+        TestHelpers.AuthRequest(method, url, token, body);
 
     // ── Favoritos ─────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task AddFavorite_ConToken_Devuelve200()
     {
-        var response = await _client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{_gameId}"));
+        var response = await client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{gameId}"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -69,9 +69,9 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task RemoveFavorite_DespuesDeAgregar_Devuelve200()
     {
-        await _client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{_gameId}"));
+        await client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{gameId}"));
 
-        var response = await _client.SendAsync(Req(HttpMethod.Delete, $"/api/social/favorites/{_gameId}"));
+        var response = await client.SendAsync(Req(HttpMethod.Delete, $"/api/social/favorites/{gameId}"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -81,7 +81,7 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task MarkPurchased_ConToken_Devuelve200()
     {
-        var response = await _client.SendAsync(Req(HttpMethod.Post, $"/api/social/purchases/{_gameId}"));
+        var response = await client.SendAsync(Req(HttpMethod.Post, $"/api/social/purchases/{gameId}"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -89,9 +89,9 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task UnmarkPurchased_DespuesDeMarcar_Devuelve200()
     {
-        await _client.SendAsync(Req(HttpMethod.Post, $"/api/social/purchases/{_gameId}"));
+        await client.SendAsync(Req(HttpMethod.Post, $"/api/social/purchases/{gameId}"));
 
-        var response = await _client.SendAsync(Req(HttpMethod.Delete, $"/api/social/purchases/{_gameId}"));
+        var response = await client.SendAsync(Req(HttpMethod.Delete, $"/api/social/purchases/{gameId}"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -101,24 +101,24 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task GetStatus_ConFavoritoYCompra_DevuelveEstadoCorrecto()
     {
-        await _client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{_gameId}"));
-        await _client.SendAsync(Req(HttpMethod.Post, $"/api/social/purchases/{_gameId}"));
+        await client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{gameId}"));
+        await client.SendAsync(Req(HttpMethod.Post, $"/api/social/purchases/{gameId}"));
 
-        var response = await _client.SendAsync(Req(HttpMethod.Get, $"/api/social/status?gameIds={_gameId}"));
+        var response = await client.SendAsync(Req(HttpMethod.Get, $"/api/social/status?gameIds={gameId}"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
         // Las propiedades del DTO UserGameStatusDto se serializan en camelCase
         json.GetProperty("myFavorites").EnumerateArray()
-            .Select(e => e.GetInt32()).Should().Contain(_gameId);
+            .Select(e => e.GetInt32()).Should().Contain(gameId);
         json.GetProperty("myPurchases").EnumerateArray()
-            .Select(e => e.GetInt32()).Should().Contain(_gameId);
+            .Select(e => e.GetInt32()).Should().Contain(gameId);
     }
 
     [Fact]
     public async Task GetStatus_SinFavoritosNiCompras_DevuelveListasVacias()
     {
-        var response = await _client.SendAsync(Req(HttpMethod.Get, $"/api/social/status?gameIds={_gameId}"));
+        var response = await client.SendAsync(Req(HttpMethod.Get, $"/api/social/status?gameIds={gameId}"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -131,7 +131,7 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task CreateGroup_ConToken_DevuelveGroupDtoConCodigoDe8Chars()
     {
-        var response = await _client.SendAsync(
+        var response = await client.SendAsync(
             Req(HttpMethod.Post, "/api/social/groups", new { name = "Mi Grupo Test" }));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -146,14 +146,14 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     public async Task JoinGroup_ConCodigoValido_DevuelveGroupDtoConMiembro()
     {
         // Crear el grupo con un usuario diferente al del test
-        var (creatorToken, _) = await TestHelpers.RegisterAndLoginAsync(_client);
-        var createResp = await _client.SendAsync(
+        var (creatorToken, _) = await TestHelpers.RegisterAndLoginAsync(client);
+        var createResp = await client.SendAsync(
             TestHelpers.AuthRequest(HttpMethod.Post, "/api/social/groups", creatorToken, new { name = "Grupo Para Unirse" }));
         var groupJson = await createResp.Content.ReadFromJsonAsync<JsonElement>();
         var inviteCode = groupJson.GetProperty("inviteCode").GetString();
 
         // Unirse con el usuario del test
-        var response = await _client.SendAsync(
+        var response = await client.SendAsync(
             Req(HttpMethod.Post, "/api/social/groups/join", new { inviteCode }));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -167,7 +167,7 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task JoinGroup_ConCodigoInvalido_Devuelve400()
     {
-        var response = await _client.SendAsync(
+        var response = await client.SendAsync(
             Req(HttpMethod.Post, "/api/social/groups/join", new { inviteCode = "INVALIDO" }));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -176,7 +176,7 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task GetGroupInfo_UsuarioSinGrupo_DevuelveNull()
     {
-        var response = await _client.SendAsync(Req(HttpMethod.Get, "/api/social/group/info"));
+        var response = await client.SendAsync(Req(HttpMethod.Get, "/api/social/group/info"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         // ASP.NET puede serializar null como "null" o cuerpo vacío dependiendo del serializador
@@ -187,12 +187,12 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task GetGroupInfo_UsuarioConGrupo_DevuelveInfoDelGrupo()
     {
-        var createResp = await _client.SendAsync(
+        var createResp = await client.SendAsync(
             Req(HttpMethod.Post, "/api/social/groups", new { name = "Grupo Info Test" }));
         var group = await createResp.Content.ReadFromJsonAsync<JsonElement>();
         var groupId = group.GetProperty("id").GetInt32();
 
-        var response = await _client.SendAsync(Req(HttpMethod.Get, "/api/social/group/info"));
+        var response = await client.SendAsync(Req(HttpMethod.Get, "/api/social/group/info"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -204,22 +204,22 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     public async Task GetGroupInsights_ConFavoritoEnGrupo_DevuelveInsight()
     {
         // Crear grupo y añadir un favorito
-        await _client.SendAsync(Req(HttpMethod.Post, "/api/social/groups", new { name = "Insights Test" }));
-        await _client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{_gameId}"));
+        await client.SendAsync(Req(HttpMethod.Post, "/api/social/groups", new { name = "Insights Test" }));
+        await client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{gameId}"));
 
-        var response = await _client.SendAsync(Req(HttpMethod.Get, "/api/social/group"));
+        var response = await client.SendAsync(Req(HttpMethod.Get, "/api/social/group"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var items = (await response.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray().ToList();
-        items.Should().ContainSingle(e => e.GetProperty("gameId").GetInt32() == _gameId);
+        items.Should().ContainSingle(e => e.GetProperty("gameId").GetInt32() == gameId);
     }
 
     [Fact]
     public async Task GetGroupMembers_UsuarioConGrupo_DevuelveListaDeMiembros()
     {
-        await _client.SendAsync(Req(HttpMethod.Post, "/api/social/groups", new { name = "Members Test" }));
+        await client.SendAsync(Req(HttpMethod.Post, "/api/social/groups", new { name = "Members Test" }));
 
-        var response = await _client.SendAsync(Req(HttpMethod.Get, "/api/social/group/members"));
+        var response = await client.SendAsync(Req(HttpMethod.Get, "/api/social/group/members"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var items = (await response.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray().ToList();
@@ -234,7 +234,7 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     public async Task SocialEndpoints_SinToken_Devuelve401()
     {
         // Todos los endpoints sociales requieren autenticación — probamos con uno representativo
-        var response = await _client.GetAsync("/api/social/group/info");
+        var response = await client.GetAsync("/api/social/group/info");
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -245,8 +245,8 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     public async Task AddFavorite_DobleVez_EsIdempotente()
     {
         // Añadir el mismo favorito dos veces debe ser idempotente (el handler lo verifica antes de insertar).
-        var first = await _client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{_gameId}"));
-        var second = await _client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{_gameId}"));
+        var first = await client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{gameId}"));
+        var second = await client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{gameId}"));
 
         first.StatusCode.Should().Be(HttpStatusCode.OK);
         second.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -256,7 +256,7 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     public async Task GetGroupMembers_UsuarioSinGrupo_DevuelveListaVacia()
     {
         // El usuario del test no tiene grupo — GetGroupMembers debe devolver [] sin error.
-        var response = await _client.SendAsync(Req(HttpMethod.Get, "/api/social/group/members"));
+        var response = await client.SendAsync(Req(HttpMethod.Get, "/api/social/group/members"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var content = await response.Content.ReadAsStringAsync();
@@ -267,7 +267,7 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     public async Task GetGroupInsights_UsuarioSinGrupo_DevuelveListaVacia()
     {
         // El usuario no tiene grupo — insights debe devolver [] sin error.
-        var response = await _client.SendAsync(Req(HttpMethod.Get, "/api/social/group"));
+        var response = await client.SendAsync(Req(HttpMethod.Get, "/api/social/group"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var content = await response.Content.ReadAsStringAsync();

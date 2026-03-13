@@ -1,5 +1,5 @@
-﻿using GameList.Application.Features.Social.DTOs;
-using GameList.Domain.Ports;
+using GameList.Application.Features.Social.DTOs;
+using GameList.Domain.Interfaces;
 using MediatR;
 
 namespace GameList.Application.Features.Social.Commands;
@@ -9,13 +9,13 @@ namespace GameList.Application.Features.Social.Commands;
 /// </summary>
 public sealed class JoinGroupHandler : IRequestHandler<JoinGroupCommand, GroupDto?>
 {
-    private readonly IGroupRepository _groupRepository;
-    private readonly IUserRepository _userRepository;
+    private readonly IGroupRepository groupRepository;
+    private readonly IUserRepository userRepository;
 
     public JoinGroupHandler(IGroupRepository groupRepository, IUserRepository userRepository)
     {
-        _groupRepository = groupRepository;
-        _userRepository = userRepository;
+        this.groupRepository = groupRepository;
+        this.userRepository = userRepository;
     }
 
     /// <summary>
@@ -33,18 +33,18 @@ public sealed class JoinGroupHandler : IRequestHandler<JoinGroupCommand, GroupDt
     /// </returns>
     public async Task<GroupDto?> Handle(JoinGroupCommand request, CancellationToken cancellationToken)
     {
-        var group = await _groupRepository.GetByInviteCodeAsync(request.InviteCode, cancellationToken);
+        var group = await groupRepository.GetByInviteCodeAsync(request.InviteCode, cancellationToken);
         if (group is null) return null; // Código no encontrado — se trata como error de entrada del usuario.
 
-        var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
+        var user = await userRepository.GetByIdAsync(request.UserId, cancellationToken);
         if (user is null) return null; // No debería ocurrir en la práctica, pero se guarda por seguridad.
 
         user.JoinGroup(group.Id);
-        _userRepository.Update(user);
-        await _userRepository.SaveChangesAsync(cancellationToken);
+        userRepository.Update(user);
+        await userRepository.SaveChangesAsync(cancellationToken);
 
         // Se cargan los miembros actuales del grupo para construir el DTO completo.
-        var members = await _userRepository.GetByGroupIdAsync(group.Id, cancellationToken);
+        var members = await userRepository.GetByGroupIdAsync(group.Id, cancellationToken);
         return new GroupDto(group.Id, group.Name, group.InviteCode, members.Select(m => m.Username).ToList());
     }
 }

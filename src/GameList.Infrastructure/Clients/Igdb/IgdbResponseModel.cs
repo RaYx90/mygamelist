@@ -2,6 +2,9 @@ using System.Text.Json.Serialization;
 
 namespace GameList.Infrastructure.Clients.Igdb;
 
+/// <summary>
+/// Modelo de respuesta de IGDB para un registro de fecha de lanzamiento (release_date).
+/// </summary>
 internal sealed record IgdbReleaseDateModel(
     [property: JsonPropertyName("id")] long Id,
     [property: JsonPropertyName("date")] long? Date,
@@ -11,6 +14,9 @@ internal sealed record IgdbReleaseDateModel(
     [property: JsonPropertyName("game")] IgdbGameModel? Game
 );
 
+/// <summary>
+/// Modelo de respuesta de IGDB para los datos de un juego.
+/// </summary>
 internal sealed record IgdbGameModel(
     [property: JsonPropertyName("id")] long Id,
     [property: JsonPropertyName("name")] string Name,
@@ -21,6 +27,9 @@ internal sealed record IgdbGameModel(
     [property: JsonPropertyName("themes")] IReadOnlyList<IgdbThemeModel>? Themes
 );
 
+/// <summary>
+/// Modelo de respuesta de IGDB para los datos de una plataforma.
+/// </summary>
 internal sealed record IgdbPlatformModel(
     [property: JsonPropertyName("id")] long Id,
     [property: JsonPropertyName("name")] string Name,
@@ -28,11 +37,17 @@ internal sealed record IgdbPlatformModel(
     [property: JsonPropertyName("abbreviation")] string? Abbreviation
 );
 
+/// <summary>
+/// Modelo de respuesta de IGDB para la portada de un juego.
+/// </summary>
 internal sealed record IgdbCoverModel(
     [property: JsonPropertyName("id")] long Id,
     [property: JsonPropertyName("url")] string? Url
 );
 
+/// <summary>
+/// Modelo de respuesta de IGDB para un tema asociado a un juego (usado para detectar si es indie).
+/// </summary>
 internal sealed record IgdbThemeModel(
     [property: JsonPropertyName("id")] int Id
 );

@@ -1,4 +1,4 @@
-using GameList.Domain.Ports;
+using GameList.Domain.Interfaces;
 using GameList.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -12,17 +12,17 @@ namespace GameList.Api.Tests.Common;
 
 public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _pgContainer = new PostgreSqlBuilder("postgres:17-alpine")
+    private readonly PostgreSqlContainer pgContainer = new PostgreSqlBuilder("postgres:17-alpine")
         .Build();
 
     public async Task InitializeAsync()
     {
-        await _pgContainer.StartAsync();
+        await pgContainer.StartAsync();
     }
 
     public new async Task DisposeAsync()
     {
-        await _pgContainer.DisposeAsync();
+        await pgContainer.DisposeAsync();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -48,7 +48,7 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<DbContextOptions<AppDbContext>>();
             services.RemoveAll<AppDbContext>();
             services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(_pgContainer.GetConnectionString()));
+                options.UseNpgsql(pgContainer.GetConnectionString()));
 
             // Remove background sync to avoid interference
             services.RemoveAll<Microsoft.Extensions.Hosting.IHostedService>();

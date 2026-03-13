@@ -1,4 +1,4 @@
-namespace GameList.Domain.Ports;
+namespace GameList.Domain.Interfaces;
 
 /// <summary>
 /// Translates a batch of texts to the target language.

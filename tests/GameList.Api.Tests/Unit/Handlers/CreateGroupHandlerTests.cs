@@ -1,7 +1,7 @@
 using FluentAssertions;
 using GameList.Application.Features.Social.Commands;
 using GameList.Domain.Entities;
-using GameList.Domain.Ports;
+using GameList.Domain.Interfaces;
 using NSubstitute;
 using System.Text.RegularExpressions;
 
@@ -14,22 +14,22 @@ namespace GameList.Api.Tests.Unit.Handlers;
 /// </summary>
 public sealed class CreateGroupHandlerTests
 {
-    private readonly IGroupRepository _groupRepo = Substitute.For<IGroupRepository>();
-    private readonly IUserRepository _userRepo = Substitute.For<IUserRepository>();
-    private readonly CreateGroupHandler _sut;
+    private readonly IGroupRepository groupRepo = Substitute.For<IGroupRepository>();
+    private readonly IUserRepository userRepo = Substitute.For<IUserRepository>();
+    private readonly CreateGroupHandler sut;
 
     public CreateGroupHandlerTests()
     {
-        _sut = new CreateGroupHandler(_groupRepo, _userRepo);
+        sut = new CreateGroupHandler(groupRepo, userRepo);
     }
 
     [Fact]
     public async Task Handle_UsuarioNoExistente_LanzaInvalidOperationException()
     {
-        _userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+        userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<UserEntity?>(null));
 
-        var act = () => _sut.Handle(
+        var act = () => sut.Handle(
             new CreateGroupCommand(999, "Mi Grupo"), CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -40,10 +40,10 @@ public sealed class CreateGroupHandlerTests
     public async Task Handle_ConUsuarioValido_DevuelveGroupDtoConCodigoAlphanumericoYCreadorComoMiembro()
     {
         var user = UserEntity.Create("alice", "alice@test.com", "hash");
-        _userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+        userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<UserEntity?>(user));
 
-        var result = await _sut.Handle(
+        var result = await sut.Handle(
             new CreateGroupCommand(1, "Los Gamers"), CancellationToken.None);
 
         result.Should().NotBeNull();
@@ -57,9 +57,9 @@ public sealed class CreateGroupHandlerTests
         result.MemberUsernames.Should().ContainSingle().Which.Should().Be("alice");
 
         // Verificar que se persistió el grupo y la actualización del usuario.
-        await _groupRepo.Received(1).AddAsync(Arg.Any<GroupEntity>(), Arg.Any<CancellationToken>());
-        await _groupRepo.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        _userRepo.Received(1).Update(user);
-        await _userRepo.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await groupRepo.Received(1).AddAsync(Arg.Any<GroupEntity>(), Arg.Any<CancellationToken>());
+        await groupRepo.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        userRepo.Received(1).Update(user);
+        await userRepo.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

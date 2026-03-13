@@ -10,6 +10,11 @@ namespace GameList.Domain.Services;
 /// </summary>
 public static class ReleaseDomainService
 {
+    /// <summary>
+    /// Determina si un juego es exclusivo o multiplataforma según el número de plataformas distintas en sus lanzamientos.
+    /// </summary>
+    /// <param name="allReleasesForGame">Todos los lanzamientos del juego.</param>
+    /// <returns><see cref="ReleaseTypeEnum.Exclusive"/> si solo tiene una plataforma; <see cref="ReleaseTypeEnum.Multiplatform"/> si tiene varias.</returns>
     public static ReleaseTypeEnum DetermineReleaseType(
         IEnumerable<GameReleaseEntity> allReleasesForGame)
     {

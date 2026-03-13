@@ -1,4 +1,4 @@
-﻿using GameList.Application.Common.Interfaces;
+using GameList.Application.Common.Interfaces;
 using GameList.Application.Features.Auth.Commands;
 using GameList.Domain.Exceptions;
 using GameList.Infrastructure.Auth;
@@ -8,8 +8,16 @@ using Microsoft.Extensions.Options;
 
 namespace GameList.Web.Endpoints;
 
+/// <summary>
+/// Endpoints Minimal API para autenticación: registro e inicio de sesión.
+/// </summary>
 public static class AuthEndpoints
 {
+    /// <summary>
+    /// Registra los endpoints de autenticación bajo la ruta /api/auth.
+    /// </summary>
+    /// <param name="app">Constructor de rutas de la aplicación.</param>
+    /// <returns>El mismo <see cref="IEndpointRouteBuilder"/> para encadenamiento.</returns>
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
         var api = app.MapGroup("/api/auth").WithTags("Auth");
@@ -48,5 +56,18 @@ public static class AuthEndpoints
     }
 }
 
+/// <summary>
+/// Cuerpo de la solicitud de registro de usuario.
+/// </summary>
+/// <param name="Username">Nombre de usuario deseado.</param>
+/// <param name="Email">Correo electrónico del usuario.</param>
+/// <param name="Password">Contraseña en texto plano.</param>
+/// <param name="InviteCode">Código de acceso requerido para registrarse.</param>
 public sealed record RegisterRequest(string Username, string Email, string Password, string InviteCode);
+
+/// <summary>
+/// Cuerpo de la solicitud de inicio de sesión.
+/// </summary>
+/// <param name="Email">Correo electrónico del usuario.</param>
+/// <param name="Password">Contraseña en texto plano.</param>
 public sealed record LoginRequest(string Email, string Password);

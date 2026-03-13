@@ -6,8 +6,16 @@ using GameList.Domain.Enums;
 
 namespace GameList.Application.Common.Mappers;
 
+/// <summary>
+/// Mapeador estático para convertir entidades de dominio a DTOs de la capa de aplicación.
+/// </summary>
 public static class GameMapper
 {
+    /// <summary>
+    /// Convierte un <see cref="GameReleaseEntity"/> a su DTO de lanzamiento.
+    /// </summary>
+    /// <param name="release">Entidad de lanzamiento a convertir.</param>
+    /// <returns>DTO con los datos del lanzamiento.</returns>
     public static GameReleaseDto ToDto(GameReleaseEntity release)
     {
         var label = release.Platform?.Abbreviation ?? release.Platform?.Name ?? string.Empty;
@@ -31,6 +39,11 @@ public static class GameMapper
         );
     }
 
+    /// <summary>
+    /// Convierte un <see cref="PlatformEntity"/> a su DTO de plataforma.
+    /// </summary>
+    /// <param name="platform">Entidad de plataforma a convertir.</param>
+    /// <returns>DTO con los datos de la plataforma.</returns>
     public static PlatformDto ToPlatformDto(PlatformEntity platform) => new(
         Id: platform.Id,
         Name: platform.Name,
@@ -38,6 +51,11 @@ public static class GameMapper
         Abbreviation: platform.Abbreviation
     );
 
+    /// <summary>
+    /// Convierte un <see cref="GameEntity"/> a su DTO de detalle, incluyendo sus lanzamientos.
+    /// </summary>
+    /// <param name="game">Entidad del juego a convertir.</param>
+    /// <returns>DTO con los datos detallados del juego.</returns>
     public static GameDetailDto ToDetailDto(GameEntity game) => new(
         Id: game.Id,
         Name: game.Name,

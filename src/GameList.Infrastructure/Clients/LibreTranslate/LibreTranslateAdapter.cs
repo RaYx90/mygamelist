@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
-using GameList.Domain.Ports;
+using GameList.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -17,18 +17,18 @@ namespace GameList.Infrastructure.Clients.LibreTranslate;
 /// </remarks>
 internal sealed class LibreTranslateAdapter : ITranslationService
 {
-    private readonly HttpClient _httpClient;
-    private readonly LibreTranslateOptionsConfig _options;
-    private readonly ILogger<LibreTranslateAdapter> _logger;
+    private readonly HttpClient httpClient;
+    private readonly LibreTranslateOptionsConfig options;
+    private readonly ILogger<LibreTranslateAdapter> logger;
 
     public LibreTranslateAdapter(
         HttpClient httpClient,
         IOptions<LibreTranslateOptionsConfig> options,
         ILogger<LibreTranslateAdapter> logger)
     {
-        _httpClient = httpClient;
-        _options = options.Value;
-        _logger = logger;
+        this.httpClient = httpClient;
+        this.options = options.Value;
+        this.logger = logger;
     }
 
     /// <summary>
@@ -48,8 +48,8 @@ internal sealed class LibreTranslateAdapter : ITranslationService
             // Contrato de la API de LibreTranslate:
             // POST /translate con body JSON { q: string[], source: "en", target: "es", format: "text" }
             // Respuesta: { translatedText: string[] } — mismo orden que la entrada.
-            var response = await _httpClient.PostAsJsonAsync(
-                $"{_options.ApiUrl}/translate",
+            var response = await httpClient.PostAsJsonAsync(
+                $"{options.ApiUrl}/translate",
                 new
                 {
                     q = texts,
@@ -72,7 +72,7 @@ internal sealed class LibreTranslateAdapter : ITranslationService
         {
             // Fallo silencioso — se registra advertencia pero no se propaga la excepción.
             // El servicio de traducción en background reintentará este lote en el siguiente tick.
-            _logger.LogWarning(ex, "Lote de {Count} textos en LibreTranslate falló. Se omite.", texts.Count);
+            logger.LogWarning(ex, "Lote de {Count} textos en LibreTranslate falló. Se omite.", texts.Count);
         }
 
         // En caso de fallo parcial o total, devuelve nulls para que el caller decida qué hacer.

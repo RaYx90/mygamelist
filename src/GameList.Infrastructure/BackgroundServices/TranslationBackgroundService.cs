@@ -1,4 +1,4 @@
-using GameList.Domain.Ports;
+using GameList.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -21,8 +21,8 @@ namespace GameList.Infrastructure.BackgroundServices;
 /// </remarks>
 public sealed class TranslationBackgroundService : BackgroundService
 {
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<TranslationBackgroundService> _logger;
+    private readonly IServiceScopeFactory scopeFactory;
+    private readonly ILogger<TranslationBackgroundService> logger;
 
     // Intervalo entre lotes — suficiente para que LibreTranslate no se sature.
     private static readonly TimeSpan BatchInterval = TimeSpan.FromSeconds(15);
@@ -34,8 +34,8 @@ public sealed class TranslationBackgroundService : BackgroundService
         IServiceScopeFactory scopeFactory,
         ILogger<TranslationBackgroundService> logger)
     {
-        _scopeFactory = scopeFactory;
-        _logger = logger;
+        this.scopeFactory = scopeFactory;
+        this.logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -52,7 +52,7 @@ public sealed class TranslationBackgroundService : BackgroundService
         catch (OperationCanceledException)
         {
             // Se lanza al cancelar el token de parada — es el comportamiento esperado al apagar la app.
-            _logger.LogInformation("Servicio de traducción en segundo plano detenido.");
+            logger.LogInformation("Servicio de traducción en segundo plano detenido.");
         }
     }
 
@@ -66,7 +66,7 @@ public sealed class TranslationBackgroundService : BackgroundService
         try
         {
             // Scope por tick — necesario porque DbContext tiene lifetime Scoped (ver remarks de la clase).
-            await using var scope = _scopeFactory.CreateAsyncScope();
+            await using var scope = scopeFactory.CreateAsyncScope();
             var gameRepository = scope.ServiceProvider.GetRequiredService<IGameRepository>();
             var translationService = scope.ServiceProvider.GetRequiredService<ITranslationService>();
 
@@ -93,14 +93,14 @@ public sealed class TranslationBackgroundService : BackgroundService
             {
                 // Un solo SaveChangesAsync por tick en lugar de uno por juego.
                 await gameRepository.SaveChangesAsync(cancellationToken);
-                _logger.LogInformation("Traducidos {Count} summaries de juegos", translated);
+                logger.LogInformation("Traducidos {Count} summaries de juegos", translated);
             }
         }
         catch (Exception ex)
         {
             // Fallo silencioso: se registra el error pero el servicio sigue corriendo.
             // El lote fallido se reintentará en el siguiente tick (15s).
-            _logger.LogError(ex, "Fallo en el lote de traducción.");
+            logger.LogError(ex, "Fallo en el lote de traducción.");
         }
     }
 }

@@ -10,27 +10,27 @@ namespace GameList.Api.Tests.Endpoints;
 
 public sealed class PlatformsEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAsyncLifetime
 {
-    private readonly HttpClient _client;
-    private readonly CustomWebApplicationFactory _factory;
+    private readonly HttpClient client;
+    private readonly CustomWebApplicationFactory factory;
 
     public PlatformsEndpointTests(CustomWebApplicationFactory factory)
     {
-        _factory = factory;
-        _client = factory.CreateClient();
+        this.factory = factory;
+        client = factory.CreateClient();
     }
 
     // Los endpoints de plataformas requieren autenticación JWT.
     public async Task InitializeAsync()
     {
-        var (token, _) = await TestHelpers.RegisterAndLoginAsync(_client);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var (token, _) = await TestHelpers.RegisterAndLoginAsync(client);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
 
     private async Task SeedDataAsync()
     {
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
         await sender.Send(new SyncGamesCommand(DateTime.UtcNow.Year));
     }
@@ -40,7 +40,7 @@ public sealed class PlatformsEndpointTests : IClassFixture<CustomWebApplicationF
     {
         await SeedDataAsync();
 
-        var response = await _client.GetAsync("/api/platforms");
+        var response = await client.GetAsync("/api/platforms");
 
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
         var content = await response.Content.ReadAsStringAsync();
@@ -52,7 +52,7 @@ public sealed class PlatformsEndpointTests : IClassFixture<CustomWebApplicationF
     [Fact]
     public async Task GetPlatforms_Returns200_EvenWhenEmpty()
     {
-        var response = await _client.GetAsync("/api/platforms");
+        var response = await client.GetAsync("/api/platforms");
 
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
     }

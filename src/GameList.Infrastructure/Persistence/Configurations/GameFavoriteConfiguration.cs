@@ -1,11 +1,18 @@
-﻿using GameList.Domain.Entities;
+using GameList.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GameList.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configuración Fluent API de EF Core para la entidad <see cref="GameFavoriteEntity"/>.
+/// </summary>
 internal sealed class GameFavoriteConfiguration : IEntityTypeConfiguration<GameFavoriteEntity>
 {
+    /// <summary>
+    /// Define el mapeo de columnas, índice de unicidad y relaciones de la tabla GameFavorites.
+    /// </summary>
+    /// <param name="builder">Constructor de configuración de la entidad.</param>
     public void Configure(EntityTypeBuilder<GameFavoriteEntity> builder)
     {
         builder.ToTable("GameFavorites");

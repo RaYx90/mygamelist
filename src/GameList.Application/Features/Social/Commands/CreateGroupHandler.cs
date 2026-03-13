@@ -1,7 +1,7 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using GameList.Application.Features.Social.DTOs;
 using GameList.Domain.Entities;
-using GameList.Domain.Ports;
+using GameList.Domain.Interfaces;
 using MediatR;
 
 namespace GameList.Application.Features.Social.Commands;
@@ -12,18 +12,18 @@ namespace GameList.Application.Features.Social.Commands;
 /// </summary>
 public sealed class CreateGroupHandler : IRequestHandler<CreateGroupCommand, GroupDto>
 {
-    private readonly IGroupRepository _groupRepository;
-    private readonly IUserRepository _userRepository;
+    private readonly IGroupRepository groupRepository;
+    private readonly IUserRepository userRepository;
 
     public CreateGroupHandler(IGroupRepository groupRepository, IUserRepository userRepository)
     {
-        _groupRepository = groupRepository;
-        _userRepository = userRepository;
+        this.groupRepository = groupRepository;
+        this.userRepository = userRepository;
     }
 
     public async Task<GroupDto> Handle(CreateGroupCommand request, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken)
+        var user = await userRepository.GetByIdAsync(request.UserId, cancellationToken)
             ?? throw new InvalidOperationException("User not found.");
 
         // Generación del código de invitación:
@@ -37,15 +37,15 @@ public sealed class CreateGroupHandler : IRequestHandler<CreateGroupCommand, Gro
             .Replace("+", "A").Replace("/", "B").Replace("=", "C")[..8].ToUpperInvariant();
 
         var group = GroupEntity.Create(request.GroupName, inviteCode);
-        await _groupRepository.AddAsync(group, cancellationToken);
+        await groupRepository.AddAsync(group, cancellationToken);
 
         // Se guarda primero para que EF Core asigne group.Id antes de usarlo como FK en JoinGroup.
-        await _groupRepository.SaveChangesAsync(cancellationToken);
+        await groupRepository.SaveChangesAsync(cancellationToken);
 
         // El creador se convierte automáticamente en el primer miembro del grupo.
         user.JoinGroup(group.Id);
-        _userRepository.Update(user);
-        await _userRepository.SaveChangesAsync(cancellationToken);
+        userRepository.Update(user);
+        await userRepository.SaveChangesAsync(cancellationToken);
 
         return new GroupDto(group.Id, group.Name, group.InviteCode, [user.Username]);
     }

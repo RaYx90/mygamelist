@@ -2,7 +2,7 @@ using FluentAssertions;
 using GameList.Application.Common.Interfaces;
 using GameList.Application.Features.Auth.Commands;
 using GameList.Domain.Entities;
-using GameList.Domain.Ports;
+using GameList.Domain.Interfaces;
 using NSubstitute;
 
 namespace GameList.Api.Tests.Unit.Handlers;
@@ -13,38 +13,38 @@ namespace GameList.Api.Tests.Unit.Handlers;
 /// </summary>
 public sealed class LoginHandlerTests
 {
-    private readonly IUserRepository _userRepo = Substitute.For<IUserRepository>();
-    private readonly IPasswordHasher _hasher = Substitute.For<IPasswordHasher>();
-    private readonly LoginHandler _sut;
+    private readonly IUserRepository userRepo = Substitute.For<IUserRepository>();
+    private readonly IPasswordHasher hasher = Substitute.For<IPasswordHasher>();
+    private readonly LoginHandler sut;
 
     public LoginHandlerTests()
     {
-        _sut = new LoginHandler(_userRepo, _hasher);
+        sut = new LoginHandler(userRepo, hasher);
     }
 
     [Fact]
     public async Task Handle_ConEmailNoExistente_DevuelveNull()
     {
-        _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<UserEntity?>(null));
 
-        var result = await _sut.Handle(
+        var result = await sut.Handle(
             new LoginCommand("noexiste@test.com", "pass"), CancellationToken.None);
 
         result.Should().BeNull();
         // No debe intentar verificar la contraseña si el usuario no existe.
-        _hasher.DidNotReceive().Verify(Arg.Any<string>(), Arg.Any<string>());
+        hasher.DidNotReceive().Verify(Arg.Any<string>(), Arg.Any<string>());
     }
 
     [Fact]
     public async Task Handle_ConPasswordIncorrecta_DevuelveNull()
     {
         var user = UserEntity.Create("alice", "alice@test.com", "correct_hash");
-        _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<UserEntity?>(user));
-        _hasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
+        hasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
 
-        var result = await _sut.Handle(
+        var result = await sut.Handle(
             new LoginCommand("alice@test.com", "wrong_pass"), CancellationToken.None);
 
         result.Should().BeNull();
@@ -54,11 +54,11 @@ public sealed class LoginHandlerTests
     public async Task Handle_ConCredencialesValidas_DevuelveUserDto()
     {
         var user = UserEntity.Create("alice", "alice@test.com", "correct_hash");
-        _userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        userRepo.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<UserEntity?>(user));
-        _hasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+        hasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
 
-        var result = await _sut.Handle(
+        var result = await sut.Handle(
             new LoginCommand("alice@test.com", "correct_pass"), CancellationToken.None);
 
         result.Should().NotBeNull();

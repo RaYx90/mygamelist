@@ -1,11 +1,18 @@
-﻿using GameList.Domain.Entities;
+using GameList.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GameList.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configuración Fluent API de EF Core para la entidad <see cref="GroupEntity"/>.
+/// </summary>
 internal sealed class GroupConfiguration : IEntityTypeConfiguration<GroupEntity>
 {
+    /// <summary>
+    /// Define el mapeo de columnas e índices de la tabla Groups.
+    /// </summary>
+    /// <param name="builder">Constructor de configuración de la entidad.</param>
     public void Configure(EntityTypeBuilder<GroupEntity> builder)
     {
         builder.ToTable("Groups");

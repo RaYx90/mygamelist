@@ -1,6 +1,6 @@
 ﻿using GameList.Domain.Entities;
 
-namespace GameList.Domain.Ports;
+namespace GameList.Domain.Interfaces;
 
 /// <summary>
 /// Puerto de persistencia para <see cref="GroupEntity"/>.

@@ -11,14 +11,14 @@ namespace GameList.Api.Tests.Endpoints;
 
 public sealed class SyncTests : IClassFixture<CustomWebApplicationFactory>
 {
-    private readonly CustomWebApplicationFactory _factory;
+    private readonly CustomWebApplicationFactory factory;
 
-    public SyncTests(CustomWebApplicationFactory factory) => _factory = factory;
+    public SyncTests(CustomWebApplicationFactory factory) => this.factory = factory;
 
     [Fact]
     public async Task SyncGames_WithFakeProvider_PersistsGamesAndPlatforms()
     {
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.EnsureCreatedAsync();
@@ -42,7 +42,7 @@ public sealed class SyncTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task SyncGames_MultiPlatformGame_MarkedAsMultiplatform()
     {
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.EnsureCreatedAsync();
@@ -61,7 +61,7 @@ public sealed class SyncTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task SyncGames_ExclusiveGame_MarkedAsExclusive()
     {
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.EnsureCreatedAsync();
@@ -80,7 +80,7 @@ public sealed class SyncTests : IClassFixture<CustomWebApplicationFactory>
     {
         // El sync usa upsert (insert-or-update), por lo que ejecutarlo dos veces
         // debe producir el mismo número de registros que ejecutarlo una sola vez.
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.EnsureCreatedAsync();

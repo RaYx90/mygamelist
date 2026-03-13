@@ -1,4 +1,4 @@
-﻿namespace GameList.Domain.Entities;
+namespace GameList.Domain.Entities;
 
 /// <summary>
 /// Representa un usuario de la aplicación con credenciales de autenticación y membresía opcional en un grupo.
@@ -32,11 +32,11 @@ public sealed class UserEntity
     public GroupEntity? Group { get; private set; }
 
     // Campos privados para evitar que código externo manipule las colecciones directamente.
-    private readonly List<GameFavoriteEntity> _favorites = [];
-    private readonly List<GamePurchaseEntity> _purchases = [];
+    private readonly List<GameFavoriteEntity> favorites = [];
+    private readonly List<GamePurchaseEntity> purchases = [];
 
-    public IReadOnlyCollection<GameFavoriteEntity> Favorites => _favorites.AsReadOnly();
-    public IReadOnlyCollection<GamePurchaseEntity> Purchases => _purchases.AsReadOnly();
+    public IReadOnlyCollection<GameFavoriteEntity> Favorites => favorites.AsReadOnly();
+    public IReadOnlyCollection<GamePurchaseEntity> Purchases => purchases.AsReadOnly();
 
     // Constructor privado requerido por EF Core para materializar entidades desde la BD.
     private UserEntity() { }

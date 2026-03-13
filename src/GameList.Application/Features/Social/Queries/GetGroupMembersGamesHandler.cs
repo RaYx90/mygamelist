@@ -1,5 +1,5 @@
 using GameList.Application.Features.Social.DTOs;
-using GameList.Domain.Ports;
+using GameList.Domain.Interfaces;
 using MediatR;
 
 namespace GameList.Application.Features.Social.Queries;
@@ -15,31 +15,31 @@ namespace GameList.Application.Features.Social.Queries;
 /// </remarks>
 public sealed class GetGroupMembersGamesHandler : IRequestHandler<GetGroupMembersGamesQuery, IReadOnlyList<MemberGamesDto>>
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IGameFavoriteRepository _favoriteRepository;
-    private readonly IGamePurchaseRepository _purchaseRepository;
+    private readonly IUserRepository userRepository;
+    private readonly IGameFavoriteRepository favoriteRepository;
+    private readonly IGamePurchaseRepository purchaseRepository;
 
     public GetGroupMembersGamesHandler(
         IUserRepository userRepository,
         IGameFavoriteRepository favoriteRepository,
         IGamePurchaseRepository purchaseRepository)
     {
-        _userRepository = userRepository;
-        _favoriteRepository = favoriteRepository;
-        _purchaseRepository = purchaseRepository;
+        this.userRepository = userRepository;
+        this.favoriteRepository = favoriteRepository;
+        this.purchaseRepository = purchaseRepository;
     }
 
     public async Task<IReadOnlyList<MemberGamesDto>> Handle(GetGroupMembersGamesQuery request, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
+        var user = await userRepository.GetByIdAsync(request.UserId, cancellationToken);
         if (user?.GroupId is null) return []; // El usuario no pertenece a ningún grupo.
 
-        var members = await _userRepository.GetByGroupIdAsync(user.GroupId.Value, cancellationToken);
+        var members = await userRepository.GetByGroupIdAsync(user.GroupId.Value, cancellationToken);
         var memberIds = members.Select(m => m.Id).ToList();
 
         // Carga favoritos y compras del grupo en dos consultas batch.
-        var allFavs = await _favoriteRepository.GetByUserIdsAsync(memberIds, cancellationToken);
-        var allPurchases = await _purchaseRepository.GetByUserIdsAsync(memberIds, cancellationToken);
+        var allFavs = await favoriteRepository.GetByUserIdsAsync(memberIds, cancellationToken);
+        var allPurchases = await purchaseRepository.GetByUserIdsAsync(memberIds, cancellationToken);
 
         // Indexado por userId para resolución O(1) de las listas de cada miembro.
         var favsByUser = allFavs.GroupBy(f => f.UserId).ToDictionary(g => g.Key, g => g.ToList());

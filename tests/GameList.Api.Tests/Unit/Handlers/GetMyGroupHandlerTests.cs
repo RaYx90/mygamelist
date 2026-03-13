@@ -1,7 +1,7 @@
 using FluentAssertions;
 using GameList.Application.Features.Social.Queries;
 using GameList.Domain.Entities;
-using GameList.Domain.Ports;
+using GameList.Domain.Interfaces;
 using NSubstitute;
 
 namespace GameList.Api.Tests.Unit.Handlers;
@@ -12,26 +12,26 @@ namespace GameList.Api.Tests.Unit.Handlers;
 /// </summary>
 public sealed class GetMyGroupHandlerTests
 {
-    private readonly IUserRepository _userRepo = Substitute.For<IUserRepository>();
-    private readonly IGroupRepository _groupRepo = Substitute.For<IGroupRepository>();
-    private readonly GetMyGroupHandler _sut;
+    private readonly IUserRepository userRepo = Substitute.For<IUserRepository>();
+    private readonly IGroupRepository groupRepo = Substitute.For<IGroupRepository>();
+    private readonly GetMyGroupHandler sut;
 
     public GetMyGroupHandlerTests()
     {
-        _sut = new GetMyGroupHandler(_userRepo, _groupRepo);
+        sut = new GetMyGroupHandler(userRepo, groupRepo);
     }
 
     [Fact]
     public async Task Handle_UsuarioNoExistente_DevuelveNull()
     {
-        _userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+        userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<UserEntity?>(null));
 
-        var result = await _sut.Handle(new GetMyGroupQuery(999), CancellationToken.None);
+        var result = await sut.Handle(new GetMyGroupQuery(999), CancellationToken.None);
 
         result.Should().BeNull();
         // No debe consultar el grupo si el usuario no existe.
-        await _groupRepo.DidNotReceive().GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
+        await groupRepo.DidNotReceive().GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -39,10 +39,10 @@ public sealed class GetMyGroupHandlerTests
     {
         var user = UserEntity.Create("alice", "alice@test.com", "hash");
         // user.GroupId es null — no pertenece a ningún grupo.
-        _userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+        userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<UserEntity?>(user));
 
-        var result = await _sut.Handle(new GetMyGroupQuery(1), CancellationToken.None);
+        var result = await sut.Handle(new GetMyGroupQuery(1), CancellationToken.None);
 
         result.Should().BeNull();
     }
@@ -56,14 +56,14 @@ public sealed class GetMyGroupHandlerTests
         var group = GroupEntity.Create("Los Gamers", "ABCD1234");
         var member = UserEntity.Create("bob", "bob@test.com", "hash");
 
-        _userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+        userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<UserEntity?>(user));
-        _groupRepo.GetByIdAsync(10, Arg.Any<CancellationToken>())
+        groupRepo.GetByIdAsync(10, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<GroupEntity?>(group));
-        _userRepo.GetByGroupIdAsync(10, Arg.Any<CancellationToken>())
+        userRepo.GetByGroupIdAsync(10, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<UserEntity>>(new[] { user, member }));
 
-        var result = await _sut.Handle(new GetMyGroupQuery(1), CancellationToken.None);
+        var result = await sut.Handle(new GetMyGroupQuery(1), CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.Name.Should().Be("Los Gamers");

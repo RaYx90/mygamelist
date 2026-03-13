@@ -4,38 +4,49 @@ using System.Text.Json.Serialization;
 namespace GameList.Infrastructure.Clients.Igdb;
 
 /// <summary>
-/// Handles OAuth2 Client Credentials token acquisition and caching for Twitch/IGDB.
+/// Gestiona la obtención y caché del token de acceso OAuth2 para la API de IGDB (Twitch).
+/// Usa doble comprobación con semáforo para evitar solicitudes concurrentes de token.
 /// </summary>
 internal sealed class IgdbTokenService
 {
-    private readonly HttpClient _httpClient;
-    private readonly IgdbOptionsConfig _options;
+    private readonly HttpClient httpClient;
+    private readonly IgdbOptionsConfig options;
 
-    private string? _cachedToken;
-    private DateTime _tokenExpiry = DateTime.MinValue;
-    private readonly SemaphoreSlim _lock = new(1, 1);
+    private string? cachedToken;
+    private DateTime tokenExpiry = DateTime.MinValue;
+    private readonly SemaphoreSlim tokenLock = new(1, 1);
 
+    /// <summary>
+    /// Inicializa el servicio con el cliente HTTP y las opciones de configuración de IGDB.
+    /// </summary>
+    /// <param name="httpClient">Cliente HTTP para las solicitudes de token.</param>
+    /// <param name="options">Opciones de configuración de IGDB.</param>
     public IgdbTokenService(HttpClient httpClient, IgdbOptionsConfig options)
     {
-        _httpClient = httpClient;
-        _options = options;
+        this.httpClient = httpClient;
+        this.options = options;
     }
 
+    /// <summary>
+    /// Devuelve el token de acceso vigente, solicitando uno nuevo a Twitch si ha expirado.
+    /// </summary>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    /// <returns>Token de acceso OAuth2 como cadena.</returns>
     public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken = default)
     {
-        if (_cachedToken is not null && DateTime.UtcNow < _tokenExpiry)
-            return _cachedToken;
+        if (cachedToken is not null && DateTime.UtcNow < tokenExpiry)
+            return cachedToken;
 
-        await _lock.WaitAsync(cancellationToken);
+        await tokenLock.WaitAsync(cancellationToken);
         try
         {
             // Double-check after acquiring lock
-            if (_cachedToken is not null && DateTime.UtcNow < _tokenExpiry)
-                return _cachedToken;
+            if (cachedToken is not null && DateTime.UtcNow < tokenExpiry)
+                return cachedToken;
 
-            var response = await _httpClient.PostAsync(
-                $"{_options.TokenUrl}?client_id={_options.ClientId}" +
-                $"&client_secret={_options.ClientSecret}" +
+            var response = await httpClient.PostAsync(
+                $"{options.TokenUrl}?client_id={options.ClientId}" +
+                $"&client_secret={options.ClientSecret}" +
                 $"&grant_type=client_credentials",
                 content: null,
                 cancellationToken);
@@ -46,19 +57,22 @@ internal sealed class IgdbTokenService
                 .ReadFromJsonAsync<IgdbTokenResponse>(cancellationToken: cancellationToken)
                 ?? throw new InvalidOperationException("Failed to deserialize IGDB token response.");
 
-            _cachedToken = tokenResponse.AccessToken;
+            cachedToken = tokenResponse.AccessToken;
             // Refresh 60 seconds before actual expiry
-            _tokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn - 60);
+            tokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn - 60);
 
-            return _cachedToken;
+            return cachedToken;
         }
         finally
         {
-            _lock.Release();
+            tokenLock.Release();
         }
     }
 }
 
+/// <summary>
+/// Modelo de respuesta del endpoint de tokens OAuth2 de Twitch.
+/// </summary>
 internal sealed record IgdbTokenResponse(
     [property: JsonPropertyName("access_token")] string AccessToken,
     [property: JsonPropertyName("expires_in")] int ExpiresIn,

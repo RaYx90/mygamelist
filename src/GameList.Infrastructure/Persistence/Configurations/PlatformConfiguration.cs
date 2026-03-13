@@ -4,8 +4,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GameList.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configuración Fluent API de EF Core para la entidad <see cref="PlatformEntity"/>.
+/// </summary>
 internal sealed class PlatformConfiguration : IEntityTypeConfiguration<PlatformEntity>
 {
+    /// <summary>
+    /// Define el mapeo de columnas e índices de la tabla Platforms.
+    /// </summary>
+    /// <param name="builder">Constructor de configuración de la entidad.</param>
     public void Configure(EntityTypeBuilder<PlatformEntity> builder)
     {
         builder.ToTable("Platforms");

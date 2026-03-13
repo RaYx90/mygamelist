@@ -12,11 +12,11 @@ namespace GameList.Api.Tests.Endpoints;
 /// </summary>
 public sealed class AuthEndpointTests : IClassFixture<CustomWebApplicationFactory>
 {
-    private readonly HttpClient _client;
+    private readonly HttpClient client;
 
     public AuthEndpointTests(CustomWebApplicationFactory factory)
     {
-        _client = factory.CreateClient();
+        client = factory.CreateClient();
     }
 
     // ── Registro ─────────────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ public sealed class AuthEndpointTests : IClassFixture<CustomWebApplicationFactor
     {
         var id = Guid.NewGuid().ToString("N")[..12];
 
-        var response = await _client.PostAsJsonAsync("/api/auth/register", new
+        var response = await client.PostAsJsonAsync("/api/auth/register", new
         {
             Username = $"user{id}",
             Email = $"user{id}@test.com",
@@ -44,7 +44,7 @@ public sealed class AuthEndpointTests : IClassFixture<CustomWebApplicationFactor
     [Fact]
     public async Task Register_ConCodigoInvalido_Devuelve400()
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/register", new
+        var response = await client.PostAsJsonAsync("/api/auth/register", new
         {
             Username = "cualquieruser",
             Email = "cualquier@test.com",
@@ -62,7 +62,7 @@ public sealed class AuthEndpointTests : IClassFixture<CustomWebApplicationFactor
         var email = $"dup{id}@test.com";
 
         // Primer registro — debe funcionar
-        await _client.PostAsJsonAsync("/api/auth/register", new
+        await client.PostAsJsonAsync("/api/auth/register", new
         {
             Username = $"user{id}a",
             Email = email,
@@ -71,7 +71,7 @@ public sealed class AuthEndpointTests : IClassFixture<CustomWebApplicationFactor
         });
 
         // Segundo registro con el mismo email — debe fallar con 400
-        var response = await _client.PostAsJsonAsync("/api/auth/register", new
+        var response = await client.PostAsJsonAsync("/api/auth/register", new
         {
             Username = $"user{id}b",
             Email = email,
@@ -91,7 +91,7 @@ public sealed class AuthEndpointTests : IClassFixture<CustomWebApplicationFactor
         var email = $"login{id}@test.com";
         const string password = "TestPass1!";
 
-        await _client.PostAsJsonAsync("/api/auth/register", new
+        await client.PostAsJsonAsync("/api/auth/register", new
         {
             Username = $"loginuser{id}",
             Email = email,
@@ -99,7 +99,7 @@ public sealed class AuthEndpointTests : IClassFixture<CustomWebApplicationFactor
             InviteCode = TestHelpers.RegistrationSecret
         });
 
-        var response = await _client.PostAsJsonAsync("/api/auth/login", new
+        var response = await client.PostAsJsonAsync("/api/auth/login", new
         {
             Email = email,
             Password = password
@@ -116,7 +116,7 @@ public sealed class AuthEndpointTests : IClassFixture<CustomWebApplicationFactor
         var id = Guid.NewGuid().ToString("N")[..12];
         var email = $"badpass{id}@test.com";
 
-        await _client.PostAsJsonAsync("/api/auth/register", new
+        await client.PostAsJsonAsync("/api/auth/register", new
         {
             Username = $"badpassuser{id}",
             Email = email,
@@ -124,7 +124,7 @@ public sealed class AuthEndpointTests : IClassFixture<CustomWebApplicationFactor
             InviteCode = TestHelpers.RegistrationSecret
         });
 
-        var response = await _client.PostAsJsonAsync("/api/auth/login", new
+        var response = await client.PostAsJsonAsync("/api/auth/login", new
         {
             Email = email,
             Password = "WrongPass999!"
@@ -136,7 +136,7 @@ public sealed class AuthEndpointTests : IClassFixture<CustomWebApplicationFactor
     [Fact]
     public async Task Login_ConEmailNoExistente_Devuelve401()
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/login", new
+        var response = await client.PostAsJsonAsync("/api/auth/login", new
         {
             Email = "noexiste.nunca@test.com",
             Password = "TestPass1!"

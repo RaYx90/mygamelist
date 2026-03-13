@@ -2,7 +2,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using GameList.Domain.Enums;
-using GameList.Domain.Ports;
+using GameList.Domain.Interfaces;
 using Microsoft.Extensions.Options;
 
 namespace GameList.Infrastructure.Clients.Igdb;
@@ -18,9 +18,9 @@ namespace GameList.Infrastructure.Clients.Igdb;
 /// </remarks>
 internal sealed class IgdbDataProviderAdapter : IGameDataProvider
 {
-    private readonly HttpClient _httpClient;
-    private readonly IgdbTokenService _tokenService;
-    private readonly IgdbOptionsConfig _options;
+    private readonly HttpClient httpClient;
+    private readonly IgdbTokenService tokenService;
+    private readonly IgdbOptionsConfig options;
 
     // Códigos de región de IGDB: 1=Europa, 8=Worldwide. Definido pero no usado actualmente
     // en la query — el filtro de región fue descartado porque IGDB no asigna región a muchos juegos de 2026.
@@ -39,9 +39,9 @@ internal sealed class IgdbDataProviderAdapter : IGameDataProvider
         IgdbTokenService tokenService,
         IOptions<IgdbOptionsConfig> options)
     {
-        _httpClient = httpClient;
-        _tokenService = tokenService;
-        _options = options.Value;
+        this.httpClient = httpClient;
+        this.tokenService = tokenService;
+        this.options = options.Value;
     }
 
     /// <summary>
@@ -61,10 +61,10 @@ internal sealed class IgdbDataProviderAdapter : IGameDataProvider
         int offset = 0;
 
         // Se obtiene el token OAuth de Twitch (se cachea internamente en IgdbTokenService).
-        var token = await _tokenService.GetAccessTokenAsync(cancellationToken);
-        _httpClient.DefaultRequestHeaders.Clear();
-        _httpClient.DefaultRequestHeaders.Add("Client-ID", _options.ClientId);
-        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+        var token = await tokenService.GetAccessTokenAsync(cancellationToken);
+        httpClient.DefaultRequestHeaders.Clear();
+        httpClient.DefaultRequestHeaders.Add("Client-ID", options.ClientId);
+        httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
         // Bucle de paginación: continúa hasta que una página devuelva menos resultados que el tamaño de página.
         while (true)
@@ -83,8 +83,8 @@ internal sealed class IgdbDataProviderAdapter : IGameDataProvider
                 $" & (game.themes = null | game.themes != (38));" +
                 $" limit {pageSize}; offset {offset};";
 
-            var response = await _httpClient.PostAsync(
-                $"{_options.BaseUrl}/release_dates",
+            var response = await httpClient.PostAsync(
+                $"{options.BaseUrl}/release_dates",
                 new StringContent(query, Encoding.UTF8, "text/plain"),
                 cancellationToken);
 

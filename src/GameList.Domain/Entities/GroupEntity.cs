@@ -1,4 +1,4 @@
-﻿namespace GameList.Domain.Entities;
+namespace GameList.Domain.Entities;
 
 /// <summary>
 /// Representa un grupo social al que los usuarios pueden unirse para compartir sus listas de juegos.
@@ -17,13 +17,13 @@ public sealed class GroupEntity
     public DateTime CreatedAt { get; private set; }
 
     // Campo privado para evitar que código externo manipule la colección directamente.
-    private readonly List<UserEntity> _members = [];
+    private readonly List<UserEntity> members = [];
 
     /// <summary>
     /// Vista de solo lectura de los miembros del grupo.
     /// Solo se carga cuando se hace Include() explícito en las consultas EF Core.
     /// </summary>
-    public IReadOnlyCollection<UserEntity> Members => _members.AsReadOnly();
+    public IReadOnlyCollection<UserEntity> Members => members.AsReadOnly();
 
     // Constructor privado requerido por EF Core para materializar entidades desde la BD.
     private GroupEntity() { }

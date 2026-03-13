@@ -1,4 +1,4 @@
-using GameList.Domain.Ports;
+using GameList.Domain.Interfaces;
 
 namespace GameList.Api.Tests.Common;
 

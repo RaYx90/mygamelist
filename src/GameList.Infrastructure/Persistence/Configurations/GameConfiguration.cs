@@ -4,8 +4,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GameList.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Configuración Fluent API de EF Core para la entidad <see cref="GameEntity"/>.
+/// </summary>
 internal sealed class GameConfiguration : IEntityTypeConfiguration<GameEntity>
 {
+    /// <summary>
+    /// Define el mapeo de columnas, restricciones e índices de la tabla Games.
+    /// </summary>
+    /// <param name="builder">Constructor de configuración de la entidad.</param>
     public void Configure(EntityTypeBuilder<GameEntity> builder)
     {
         builder.ToTable("Games");

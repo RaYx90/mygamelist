@@ -1,6 +1,6 @@
 using GameList.Domain.Entities;
 using GameList.Domain.Enums;
-using GameList.Domain.Ports;
+using GameList.Domain.Interfaces;
 using GameList.Domain.Services;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -27,11 +27,11 @@ namespace GameList.Application.Features.Sync.Commands;
 /// </remarks>
 public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncResultDto>
 {
-    private readonly IGameDataProvider _dataProvider;
-    private readonly IGameRepository _gameRepository;
-    private readonly IPlatformRepository _platformRepository;
-    private readonly IGameReleaseRepository _releaseRepository;
-    private readonly ILogger<SyncGamesHandler> _logger;
+    private readonly IGameDataProvider dataProvider;
+    private readonly IGameRepository gameRepository;
+    private readonly IPlatformRepository platformRepository;
+    private readonly IGameReleaseRepository releaseRepository;
+    private readonly ILogger<SyncGamesHandler> logger;
 
     public SyncGamesHandler(
         IGameDataProvider dataProvider,
@@ -40,22 +40,22 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
         IGameReleaseRepository releaseRepository,
         ILogger<SyncGamesHandler> logger)
     {
-        _dataProvider = dataProvider;
-        _gameRepository = gameRepository;
-        _platformRepository = platformRepository;
-        _releaseRepository = releaseRepository;
-        _logger = logger;
+        this.dataProvider = dataProvider;
+        this.gameRepository = gameRepository;
+        this.platformRepository = platformRepository;
+        this.releaseRepository = releaseRepository;
+        this.logger = logger;
     }
 
     public async Task<SyncResultDto> Handle(
         SyncGamesCommand request,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Iniciando sync de juegos para el año {Year}", request.Year);
+        logger.LogInformation("Iniciando sync de juegos para el año {Year}", request.Year);
 
         try
         {
-            var releaseData = await _dataProvider.GetReleasesForYearAsync(
+            var releaseData = await dataProvider.GetReleasesForYearAsync(
                 request.Year, cancellationToken);
 
             // FASE 1 — Upsert de plataformas
@@ -63,7 +63,7 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
             var platformCache = new Dictionary<long, PlatformEntity>();
             foreach (var data in releaseData.DistinctBy(d => d.IgdbPlatformId))
             {
-                var existing = await _platformRepository.GetByIgdbIdAsync(
+                var existing = await platformRepository.GetByIgdbIdAsync(
                     data.IgdbPlatformId, cancellationToken);
 
                 if (existing is null)
@@ -73,25 +73,25 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
                         data.PlatformSlug,
                         data.IgdbPlatformId,
                         data.PlatformAbbreviation);
-                    await _platformRepository.AddAsync(existing, cancellationToken);
+                    await platformRepository.AddAsync(existing, cancellationToken);
                 }
                 else
                 {
                     existing.UpdateAbbreviation(data.PlatformAbbreviation);
-                    _platformRepository.Update(existing);
+                    platformRepository.Update(existing);
                 }
 
                 platformCache[data.IgdbPlatformId] = existing;
             }
 
-            await _platformRepository.SaveChangesAsync(cancellationToken);
+            await platformRepository.SaveChangesAsync(cancellationToken);
 
             // FASE 2 — Upsert de juegos
             // Cache en memoria para resolver IgdbGameId → GameEntity.Id al insertar releases.
             var gameCache = new Dictionary<long, GameEntity>();
             foreach (var data in releaseData.DistinctBy(d => d.IgdbGameId))
             {
-                var existing = await _gameRepository.GetByIgdbIdAsync(
+                var existing = await gameRepository.GetByIgdbIdAsync(
                     data.IgdbGameId, cancellationToken);
 
                 if (existing is null)
@@ -104,18 +104,18 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
                         data.CoverImageUrl,
                         data.GameCategory,
                         data.IsIndie);
-                    await _gameRepository.AddAsync(existing, cancellationToken);
+                    await gameRepository.AddAsync(existing, cancellationToken);
                 }
                 else
                 {
                     existing.Update(data.GameName, data.Summary, data.CoverImageUrl, data.GameCategory, data.IsIndie);
-                    _gameRepository.Update(existing);
+                    gameRepository.Update(existing);
                 }
 
                 gameCache[data.IgdbGameId] = existing;
             }
 
-            await _gameRepository.SaveChangesAsync(cancellationToken);
+            await gameRepository.SaveChangesAsync(cancellationToken);
 
             // FASE 3 — Reconstrucción de releases (borrar + reinsertar)
             // Se borran todos los releases de los juegos procesados y se reinsertan desde cero.
@@ -123,7 +123,7 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
             // (plataformas añadidas o eliminadas, fechas corregidas, etc.).
             var processedGameIds = gameCache.Values.Select(g => g.Id).ToList();
             foreach (var gameId in processedGameIds)
-                await _releaseRepository.DeleteByGameIdAsync(gameId, cancellationToken);
+                await releaseRepository.DeleteByGameIdAsync(gameId, cancellationToken);
 
             // Se agrupa por juego para determinar si es exclusivo (1 plataforma) o multiplataforma (>1).
             var releasesByGame = releaseData.GroupBy(d => d.IgdbGameId);
@@ -139,7 +139,7 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
                     var gameId = gameCache[data.IgdbGameId].Id;
                     var platformId = platformCache[data.IgdbPlatformId].Id;
 
-                    await _releaseRepository.AddAsync(
+                    await releaseRepository.AddAsync(
                         GameReleaseEntity.Create(
                             gameId,
                             platformId,
@@ -150,9 +150,9 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
                 }
             }
 
-            await _releaseRepository.SaveChangesAsync(cancellationToken);
+            await releaseRepository.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation(
+            logger.LogInformation(
                 "Sync completado. Juegos: {Games}, Plataformas: {Platforms}",
                 gameCache.Count,
                 platformCache.Count);
@@ -164,7 +164,7 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Sync failed for year {Year}", request.Year);
+            logger.LogError(ex, "Sync failed for year {Year}", request.Year);
             return new SyncResultDto(
                 Success: false,
                 GamesProcessed: 0,

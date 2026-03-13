@@ -8,8 +8,17 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace GameList.Web.Endpoints;
 
+/// <summary>
+/// Endpoints Minimal API para el catálogo de juegos: lanzamientos por mes, plataformas y detalle de juego.
+/// Todos requieren autenticación.
+/// </summary>
 public static class GameEndpoints
 {
+    /// <summary>
+    /// Registra los endpoints del catálogo bajo la ruta /api, requiriendo autorización.
+    /// </summary>
+    /// <param name="app">Constructor de rutas de la aplicación.</param>
+    /// <returns>El mismo <see cref="IEndpointRouteBuilder"/> para encadenamiento.</returns>
     public static IEndpointRouteBuilder MapGameEndpoints(this IEndpointRouteBuilder app)
     {
         var api = app.MapGroup("/api").WithTags("GameList").RequireAuthorization();

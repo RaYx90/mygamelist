@@ -1,7 +1,7 @@
 using FluentAssertions;
 using GameList.Application.Features.Social.Queries;
 using GameList.Domain.Entities;
-using GameList.Domain.Ports;
+using GameList.Domain.Interfaces;
 using NSubstitute;
 
 namespace GameList.Api.Tests.Unit.Handlers;
@@ -16,14 +16,14 @@ namespace GameList.Api.Tests.Unit.Handlers;
 /// </summary>
 public sealed class GetGroupInsightsHandlerTests
 {
-    private readonly IUserRepository _userRepo = Substitute.For<IUserRepository>();
-    private readonly IGameFavoriteRepository _favRepo = Substitute.For<IGameFavoriteRepository>();
-    private readonly IGamePurchaseRepository _purchaseRepo = Substitute.For<IGamePurchaseRepository>();
-    private readonly GetGroupInsightsHandler _sut;
+    private readonly IUserRepository userRepo = Substitute.For<IUserRepository>();
+    private readonly IGameFavoriteRepository favRepo = Substitute.For<IGameFavoriteRepository>();
+    private readonly IGamePurchaseRepository purchaseRepo = Substitute.For<IGamePurchaseRepository>();
+    private readonly GetGroupInsightsHandler sut;
 
     public GetGroupInsightsHandlerTests()
     {
-        _sut = new GetGroupInsightsHandler(_userRepo, _favRepo, _purchaseRepo);
+        sut = new GetGroupInsightsHandler(userRepo, favRepo, purchaseRepo);
     }
 
     [Fact]
@@ -31,14 +31,14 @@ public sealed class GetGroupInsightsHandlerTests
     {
         // El usuario existe pero no pertenece a ningún grupo (GroupId = null).
         var user = UserEntity.Create("alice", "alice@test.com", "hash");
-        _userRepo.GetByIdAsync(1, Arg.Any<CancellationToken>())
+        userRepo.GetByIdAsync(1, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<UserEntity?>(user));
 
-        var result = await _sut.Handle(new GetGroupInsightsQuery(1), CancellationToken.None);
+        var result = await sut.Handle(new GetGroupInsightsQuery(1), CancellationToken.None);
 
         result.Should().BeEmpty();
         // No debe consultar favoritos si el usuario no tiene grupo.
-        await _favRepo.DidNotReceive().GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>());
+        await favRepo.DidNotReceive().GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -52,16 +52,16 @@ public sealed class GetGroupInsightsHandlerTests
         // fav.UserId = 0 coincide con user.Id = 0 → el lookup en usernameById funciona.
         var fav = GameFavoriteEntity.Create(userId: 0, gameId: 100);
 
-        _userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+        userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<UserEntity?>(user));
-        _userRepo.GetByGroupIdAsync(42, Arg.Any<CancellationToken>())
+        userRepo.GetByGroupIdAsync(42, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<UserEntity>>(new[] { user }));
-        _favRepo.GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())
+        favRepo.GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<GameFavoriteEntity>>(new[] { fav }));
-        _purchaseRepo.GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())
+        purchaseRepo.GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<GamePurchaseEntity>>(Array.Empty<GamePurchaseEntity>()));
 
-        var result = await _sut.Handle(new GetGroupInsightsQuery(1), CancellationToken.None);
+        var result = await sut.Handle(new GetGroupInsightsQuery(1), CancellationToken.None);
 
         result.Should().HaveCount(1);
         result[0].GameId.Should().Be(100);

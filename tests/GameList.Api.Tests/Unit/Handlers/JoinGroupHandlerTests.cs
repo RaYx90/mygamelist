@@ -1,7 +1,7 @@
 using FluentAssertions;
 using GameList.Application.Features.Social.Commands;
 using GameList.Domain.Entities;
-using GameList.Domain.Ports;
+using GameList.Domain.Interfaces;
 using NSubstitute;
 
 namespace GameList.Api.Tests.Unit.Handlers;
@@ -13,23 +13,23 @@ namespace GameList.Api.Tests.Unit.Handlers;
 /// </summary>
 public sealed class JoinGroupHandlerTests
 {
-    private readonly IGroupRepository _groupRepo = Substitute.For<IGroupRepository>();
-    private readonly IUserRepository _userRepo = Substitute.For<IUserRepository>();
-    private readonly JoinGroupHandler _sut;
+    private readonly IGroupRepository groupRepo = Substitute.For<IGroupRepository>();
+    private readonly IUserRepository userRepo = Substitute.For<IUserRepository>();
+    private readonly JoinGroupHandler sut;
 
     public JoinGroupHandlerTests()
     {
-        _sut = new JoinGroupHandler(_groupRepo, _userRepo);
+        sut = new JoinGroupHandler(groupRepo, userRepo);
     }
 
     [Fact]
     public async Task Handle_ConCodigoDeInvitacionInvalido_DevuelveNull()
     {
         // El repositorio no encuentra ningún grupo con ese código.
-        _groupRepo.GetByInviteCodeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        groupRepo.GetByInviteCodeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<GroupEntity?>(null));
 
-        var result = await _sut.Handle(
+        var result = await sut.Handle(
             new JoinGroupCommand(1, "INVALIDO"), CancellationToken.None);
 
         // null indica código no encontrado — el endpoint lo mapea a 400 Bad Request.
@@ -41,12 +41,12 @@ public sealed class JoinGroupHandlerTests
     {
         // El código es válido pero el userId no existe (no debería ocurrir en producción).
         var group = GroupEntity.Create("Test Group", "ABCD1234");
-        _groupRepo.GetByInviteCodeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        groupRepo.GetByInviteCodeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<GroupEntity?>(group));
-        _userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+        userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<UserEntity?>(null));
 
-        var result = await _sut.Handle(
+        var result = await sut.Handle(
             new JoinGroupCommand(999, "ABCD1234"), CancellationToken.None);
 
         result.Should().BeNull();
@@ -58,15 +58,15 @@ public sealed class JoinGroupHandlerTests
         var group = GroupEntity.Create("Test Group", "ABCD1234");
         var user = UserEntity.Create("alice", "alice@test.com", "hash");
 
-        _groupRepo.GetByInviteCodeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        groupRepo.GetByInviteCodeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<GroupEntity?>(group));
-        _userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+        userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<UserEntity?>(user));
         // Simula los miembros del grupo tras el join (solo "alice" en este caso).
-        _userRepo.GetByGroupIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+        userRepo.GetByGroupIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<UserEntity>>(new[] { user }));
 
-        var result = await _sut.Handle(
+        var result = await sut.Handle(
             new JoinGroupCommand(1, "ABCD1234"), CancellationToken.None);
 
         result.Should().NotBeNull();
@@ -75,7 +75,7 @@ public sealed class JoinGroupHandlerTests
         result.MemberUsernames.Should().ContainSingle().Which.Should().Be("alice");
 
         // Verificar que se persistió el cambio.
-        _userRepo.Received(1).Update(user);
-        await _userRepo.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        userRepo.Received(1).Update(user);
+        await userRepo.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

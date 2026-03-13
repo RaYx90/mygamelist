@@ -1,5 +1,5 @@
 using GameList.Application.Common.Interfaces;
-using GameList.Domain.Ports;
+using GameList.Domain.Interfaces;
 using GameList.Infrastructure.Auth;
 using GameList.Infrastructure.BackgroundServices;
 using GameList.Infrastructure.Clients.Igdb;
@@ -13,8 +13,18 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace GameList.Infrastructure.Extensions;
 
+/// <summary>
+/// Extensiones de <see cref="IServiceCollection"/> para registrar todos los servicios de infraestructura.
+/// </summary>
 public static class InfrastructureServiceExtensions
 {
+    /// <summary>
+    /// Registra en el contenedor de DI todos los servicios de infraestructura:
+    /// base de datos, repositorios, clientes HTTP (IGDB, LibreTranslate), autenticación y servicios en segundo plano.
+    /// </summary>
+    /// <param name="services">Colección de servicios donde se registran las dependencias.</param>
+    /// <param name="configuration">Configuración de la aplicación.</param>
+    /// <returns>La misma instancia de <see cref="IServiceCollection"/> para encadenamiento.</returns>
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration)
