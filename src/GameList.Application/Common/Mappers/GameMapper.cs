@@ -26,7 +26,7 @@ public static class GameMapper
             GameSlug: release.Game?.Slug ?? string.Empty,
             Summary: release.Game?.Summary,
             SummaryEs: release.Game?.SummaryEs,
-            CoverImageUrl: release.Game?.CoverImageUrl,
+            CoverImageUrl: UpgradeCoverUrl(release.Game?.CoverImageUrl),
             PlatformId: release.PlatformId,
             PlatformName: release.Platform?.Name ?? string.Empty,
             PlatformAbbreviation: release.Platform?.Abbreviation,
@@ -62,7 +62,13 @@ public static class GameMapper
         Slug: game.Slug,
         Summary: game.Summary,
         SummaryEs: game.SummaryEs,
-        CoverImageUrl: game.CoverImageUrl,
+        CoverImageUrl: UpgradeCoverUrl(game.CoverImageUrl),
         Releases: game.Releases.Select(ToDto).ToList().AsReadOnly()
     );
+
+    /// <summary>
+    /// IGDB almacena URLs con t_thumb (90×128). Se upgradea a t_cover_big (264×374) para mejor calidad visual.
+    /// </summary>
+    private static string? UpgradeCoverUrl(string? url) =>
+        url?.Replace("/t_thumb/", "/t_cover_big/");
 }

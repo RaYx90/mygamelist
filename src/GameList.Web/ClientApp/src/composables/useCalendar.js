@@ -11,6 +11,10 @@ const MONTH_NAMES = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ]
 
+function toDateStr(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
 export function useCalendar() {
   const route = useRoute()
   const router = useRouter()
@@ -22,6 +26,7 @@ export function useCalendar() {
   const isLoading = ref(true)
   const calendarDays = ref([])
   const platforms = ref([])
+  const selectedDay = ref(toDateStr(new Date()))
 
   const monthName = computed(() => MONTH_NAMES[selectedMonth.value - 1])
 
@@ -66,6 +71,7 @@ export function useCalendar() {
   async function onMonthChanged(month) {
     selectedMonth.value = month
     router.replace({ query: { ...route.query, month } })
+    selectedDay.value = `${currentYear}-${String(month).padStart(2, '0')}-01`
     await loadReleases()
   }
 
@@ -76,6 +82,36 @@ export function useCalendar() {
 
   function onSearchChanged(term) {
     searchTerm.value = term
+  }
+
+  // Devuelve true si el mes cambió (el llamante puede recargar el status)
+  async function goToPrevDay() {
+    const [y, m, d] = selectedDay.value.split('-').map(Number)
+    const prev = new Date(y, m - 1, d - 1)
+    selectedDay.value = toDateStr(prev)
+    const newMonth = prev.getMonth() + 1
+    if (newMonth !== selectedMonth.value) {
+      selectedMonth.value = newMonth
+      router.replace({ query: { ...route.query, month: newMonth } })
+      await loadReleases()
+      return true
+    }
+    return false
+  }
+
+  // Devuelve true si el mes cambió
+  async function goToNextDay() {
+    const [y, m, d] = selectedDay.value.split('-').map(Number)
+    const next = new Date(y, m - 1, d + 1)
+    selectedDay.value = toDateStr(next)
+    const newMonth = next.getMonth() + 1
+    if (newMonth !== selectedMonth.value) {
+      selectedMonth.value = newMonth
+      router.replace({ query: { ...route.query, month: newMonth } })
+      await loadReleases()
+      return true
+    }
+    return false
   }
 
   return {
@@ -90,11 +126,14 @@ export function useCalendar() {
     firstDayColumnStart,
     allDaysInMonth,
     filteredCalendarDays,
+    selectedDay,
     releasesForDay,
     loadReleases,
     loadPlatforms,
     onMonthChanged,
     onPlatformChanged,
-    onSearchChanged
+    onSearchChanged,
+    goToPrevDay,
+    goToNextDay,
   }
 }

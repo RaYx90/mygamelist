@@ -37,6 +37,9 @@
         <p class="invite-code">
           Código de invitación: <strong>{{ groupInfo.inviteCode }}</strong>
         </p>
+        <p style="font-size:0.8rem; margin-top:0.25rem; margin-bottom:0; color:#a0a0c0">
+          Comparte este código con otros usuarios ya registrados para que se unan al grupo desde su página de grupo.
+        </p>
       </div>
 
       <!-- Tarjetas por miembro -->

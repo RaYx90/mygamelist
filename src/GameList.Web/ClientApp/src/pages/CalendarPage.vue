@@ -3,6 +3,12 @@
     <div class="calendar-container">
       <div class="calendar-controls">
         <div class="filters-bar">
+          <!-- Toggle de vista -->
+          <div class="view-toggle">
+            <button class="view-toggle-btn" :class="{ active: selectedView === 'calendar' }" @click="selectedView = 'calendar'">Mes</button>
+            <button class="view-toggle-btn" :class="{ active: selectedView === 'day' }" @click="selectedView = 'day'">Día</button>
+          </div>
+
           <MonthNavigator
             :selected-month="selectedMonth"
             :current-year="currentYear"
@@ -43,24 +49,38 @@
         </div>
       </div>
 
-      <div v-else-if="filteredCalendarDays.length === 0" class="empty-state">
-        <p v-if="searchTerm">No se encontraron juegos que coincidan con "{{ searchTerm }}".</p>
-        <p v-else>No hay lanzamientos para {{ monthName }} {{ currentYear }}.</p>
-      </div>
+      <!-- Vista Mes (calendario) -->
+      <template v-else-if="selectedView === 'calendar'">
+        <div v-if="filteredCalendarDays.length === 0" class="empty-state">
+          <p v-if="searchTerm">No se encontraron juegos que coincidan con "{{ searchTerm }}".</p>
+          <p v-else>No hay lanzamientos para {{ monthName }} {{ currentYear }}.</p>
+        </div>
+        <div v-else class="calendar-grid">
+          <div class="week-header-cell" v-for="wd in WEEK_DAYS" :key="wd">{{ wd }}</div>
+          <DayCell
+            v-for="(day, index) in allDaysInMonth"
+            :key="day"
+            :date="day"
+            :releases="releasesForDay(day)"
+            :game-status="gameStatus"
+            :style="index === 0 ? { gridColumnStart: firstDayColumnStart } : undefined"
+            @game-selected="openGameDetail"
+            @show-more="openDayReleases"
+          />
+        </div>
+      </template>
 
-      <div v-else class="calendar-grid">
-        <div class="week-header-cell" v-for="wd in WEEK_DAYS" :key="wd">{{ wd }}</div>
-        <DayCell
-          v-for="(day, index) in allDaysInMonth"
-          :key="day"
-          :date="day"
-          :releases="releasesForDay(day)"
-          :game-status="gameStatus"
-          :style="index === 0 ? { gridColumnStart: firstDayColumnStart } : undefined"
-          @game-selected="openGameDetail"
-          @show-more="openDayReleases"
-        />
-      </div>
+      <!-- Vista Día -->
+      <DayView
+        v-else
+        :date="selectedDay"
+        :releases="releasesForDay(selectedDay)"
+        :game-status="gameStatus"
+        :is-loading="isLoading"
+        @prev-day="handlePrevDay"
+        @next-day="handleNextDay"
+        @game-selected="openGameDetail"
+      />
     </div>
   </main>
 
@@ -94,6 +114,7 @@ import { useGameStatus } from '../composables/useGameStatus.js'
 import MonthNavigator from '../components/calendar/MonthNavigator.vue'
 import PlatformFilter from '../components/filters/PlatformFilter.vue'
 import DayCell from '../components/calendar/DayCell.vue'
+import DayView from '../components/calendar/DayView.vue'
 import DayReleasesModal from '../components/calendar/DayReleasesModal.vue'
 import GameDetailModal from '../components/game/GameDetailModal.vue'
 
@@ -104,12 +125,14 @@ const {
   currentYear, selectedMonth, selectedPlatformId, searchTerm,
   isLoading, platforms, monthName, firstDayColumnStart,
   allDaysInMonth, filteredCalendarDays, calendarDays,
-  releasesForDay, loadReleases, loadPlatforms,
-  onMonthChanged, onPlatformChanged, onSearchChanged
+  selectedDay, releasesForDay, loadReleases, loadPlatforms,
+  onMonthChanged, onPlatformChanged, onSearchChanged,
+  goToPrevDay, goToNextDay,
 } = useCalendar()
 
 const { gameStatus, loadStatus, toggleFavorite, togglePurchase } = useGameStatus()
 
+const selectedView = ref(window.innerWidth < 640 ? 'day' : 'calendar')
 const selectedGame = ref(null)
 const selectedDayReleases = ref(null)
 const selectedDayDate = ref(null)
@@ -138,6 +161,16 @@ async function handlePlatformChanged(id) {
   await onPlatformChanged(id)
 }
 
+async function handlePrevDay() {
+  const monthChanged = await goToPrevDay()
+  if (monthChanged) await loadStatus(calendarDays.value.flatMap(d => d.releases.map(r => r.gameId)))
+}
+
+async function handleNextDay() {
+  const monthChanged = await goToNextDay()
+  if (monthChanged) await loadStatus(calendarDays.value.flatMap(d => d.releases.map(r => r.gameId)))
+}
+
 function openGameDetail(release) {
   closeDayReleases()
   selectedGame.value = release
@@ -157,3 +190,31 @@ function closeDayReleases() {
   selectedDayDate.value = null
 }
 </script>
+
+<style scoped>
+.view-toggle {
+  display: flex;
+  gap: 2px;
+  background: #16161e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.view-toggle-btn {
+  padding: 0.3rem 0.85rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #888;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.view-toggle-btn.active {
+  background: #4a4a80;
+  color: #fff;
+}
+</style>
