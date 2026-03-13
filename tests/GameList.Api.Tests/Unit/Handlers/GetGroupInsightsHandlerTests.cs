@@ -83,16 +83,37 @@ public sealed class GetGroupInsightsHandlerTests
     }
 
     [Fact]
-    public async Task Handle_UnFavoritoYUnaCompraDelMismoJuego_EsCoincidencia()
+    public async Task Handle_MismaPersonaFavoritoYCompra_NoEsCoincidencia()
     {
-        // Un miembro lo desea y otro lo ha comprado → coincidencia ("ambas").
+        // La misma persona marca favorito Y compra → no es coincidencia (solo 1 persona distinta).
+        var alice = UserEntity.Create("alice", "alice@test.com", "hash");
+        alice.JoinGroup(42);
+
+        var fav = GameFavoriteEntity.Create(userId: 0, gameId: 100);
+        var purchase = GamePurchaseEntity.Create(userId: 0, gameId: 100);
+
+        SetupGroup(42, alice);
+        favRepo.GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<GameFavoriteEntity>>(new[] { fav }));
+        purchaseRepo.GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<GamePurchaseEntity>>(new[] { purchase }));
+
+        var result = await sut.Handle(new GetGroupInsightsQuery(1), CancellationToken.None);
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Handle_UnFavoritoDeUnUsuarioYCompraDeOtro_EsCoincidencia()
+    {
+        // Una persona lo desea y una persona DISTINTA lo ha comprado → coincidencia.
         var alice = UserEntity.Create("alice", "alice@test.com", "hash");
         var bob = UserEntity.Create("bob", "bob@test.com", "hash");
         alice.JoinGroup(42);
         bob.JoinGroup(42);
 
-        var fav = GameFavoriteEntity.Create(userId: 0, gameId: 100);
-        var purchase = GamePurchaseEntity.Create(userId: 1, gameId: 100);
+        var fav = GameFavoriteEntity.Create(userId: 0, gameId: 100);      // alice
+        var purchase = GamePurchaseEntity.Create(userId: 1, gameId: 100); // bob
 
         SetupGroupWithTwo(42, alice, bob);
         favRepo.GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())

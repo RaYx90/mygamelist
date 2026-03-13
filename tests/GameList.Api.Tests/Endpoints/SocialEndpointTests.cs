@@ -201,9 +201,9 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     }
 
     [Fact]
-    public async Task GetGroupInsights_ConFavoritoYCompraEnGrupo_DevuelveInsight()
+    public async Task GetGroupInsights_MismoUsuarioFavoritoYCompra_NoEsCoincidencia()
     {
-        // Crear grupo y marcar el mismo juego como favorito Y comprado (coincidencia: alguien lo desea Y alguien lo tiene).
+        // La misma persona marca favorito Y compra → no es coincidencia (se necesitan personas distintas).
         await client.SendAsync(Req(HttpMethod.Post, "/api/social/groups", new { name = "Insights Test" }));
         await client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{gameId}"));
         await client.SendAsync(Req(HttpMethod.Post, $"/api/social/purchases/{gameId}"));
@@ -212,7 +212,7 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var items = (await response.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray().ToList();
-        items.Should().ContainSingle(e => e.GetProperty("gameId").GetInt32() == gameId);
+        items.Should().BeEmpty();
     }
 
     [Fact]

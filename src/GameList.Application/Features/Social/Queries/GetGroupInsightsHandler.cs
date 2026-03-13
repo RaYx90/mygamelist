@@ -13,8 +13,8 @@ namespace GameList.Application.Features.Social.Queries;
 /// <list type="number">
 ///   <item>Carga todos los favoritos y compras del grupo en dos consultas batch (evita N+1).</item>
 ///   <item>Recorre todos los juegos que aparecen en favoritos O compras del grupo.</item>
-///   <item>Filtra: solo es coincidencia si más de 1 persona lo desea, más de 1 lo ha comprado,
-///         o al menos 1 lo desea Y al menos 1 lo ha comprado.</item>
+///   <item>Filtra: solo es coincidencia si más de 1 persona DISTINTA está involucrada
+///         entre quienes lo desean y quienes lo han comprado.</item>
 ///   <item>Ordena descendente por <c>WantedBy.Count</c> y luego por <c>PurchasedBy.Count</c>.</item>
 /// </list>
 /// </remarks>
@@ -65,11 +65,9 @@ public sealed class GetGroupInsightsHandler : IRequestHandler<GetGroupInsightsQu
                 ? purcs.Select(p => usernameById.GetValueOrDefault(p.UserId, "?")).Distinct().ToList()
                 : (List<string>)[];
 
-            // Coincidencia: más de 1 persona lo desea, más de 1 lo ha comprado,
-            // o al menos 1 lo desea Y al menos 1 lo ha comprado.
-            bool isCoincidence = wantedBy.Count > 1
-                || purchasedBy.Count > 1
-                || (wantedBy.Count >= 1 && purchasedBy.Count >= 1);
+            // Coincidencia: más de 1 persona DISTINTA está involucrada entre quienes lo desean y quienes lo tienen.
+            // Esto evita que una sola persona que marca favorito+compra cuente como coincidencia.
+            bool isCoincidence = wantedBy.Union(purchasedBy).Distinct().Count() > 1;
 
             if (!isCoincidence) continue;
 
