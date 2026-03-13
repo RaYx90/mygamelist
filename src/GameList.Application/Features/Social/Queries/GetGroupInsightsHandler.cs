@@ -12,12 +12,10 @@ namespace GameList.Application.Features.Social.Queries;
 /// Algoritmo de agregación:
 /// <list type="number">
 ///   <item>Carga todos los favoritos y compras del grupo en dos consultas batch (evita N+1).</item>
-///   <item>Agrupa los favoritos por gameId — cada entrada representa un juego que al menos un miembro desea.</item>
-///   <item>Para cada juego: recopila los usernames distintos de quién lo quiere (<c>WantedBy</c>)
-///         y quién ya lo ha comprado (<c>PurchasedBy</c>).</item>
-///   <item>Usa el primer favorito con la propiedad de navegación <c>Game</c> cargada
-///         para extraer los metadatos de presentación (nombre, portada, fecha de lanzamiento más temprana).</item>
-///   <item>Ordena de forma descendente por <c>WantedBy.Count</c> para mostrar primero los más populares.</item>
+///   <item>Recorre todos los juegos que aparecen en favoritos O compras del grupo.</item>
+///   <item>Filtra: solo es coincidencia si más de 1 persona lo desea, más de 1 lo ha comprado,
+///         o al menos 1 lo desea Y al menos 1 lo ha comprado.</item>
+///   <item>Ordena descendente por <c>WantedBy.Count</c> y luego por <c>PurchasedBy.Count</c>.</item>
 /// </list>
 /// </remarks>
 public sealed class GetGroupInsightsHandler : IRequestHandler<GetGroupInsightsQuery, IReadOnlyList<GroupInsightDto>>
@@ -42,7 +40,8 @@ public sealed class GetGroupInsightsHandler : IRequestHandler<GetGroupInsightsQu
         var memberIds = members.Select(m => m.Id).ToList();
 
         // Diccionario id→username para resolver nombres sin consultas adicionales.
-        var usernameById = members.ToDictionary(m => m.Id, m => m.Username);
+        // GroupBy evita excepción por claves duplicadas (entidades sin persistir tienen Id=0 en tests).
+        var usernameById = members.GroupBy(m => m.Id).ToDictionary(g => g.Key, g => g.First().Username);
 
         // Carga todos los favoritos y compras del grupo en solo dos consultas.
         var allFavs = await favoriteRepository.GetByUserIdsAsync(memberIds, cancellationToken);
@@ -52,34 +51,45 @@ public sealed class GetGroupInsightsHandler : IRequestHandler<GetGroupInsightsQu
         var favsByGame = allFavs.GroupBy(f => f.GameId).ToDictionary(g => g.Key, g => g.ToList());
         var purchasesByGame = allPurchases.GroupBy(p => p.GameId).ToDictionary(g => g.Key, g => g.ToList());
 
-        var result = new List<GroupInsightDto>();
-        foreach (var (gameId, favList) in favsByGame)
-        {
-            // Usernames distintos de los miembros que tienen este juego como favorito.
-            var wantedBy = favList.Select(f => usernameById.GetValueOrDefault(f.UserId, "?")).Distinct().ToList();
+        // Recorre todos los juegos que aparecen en favoritos O en compras del grupo.
+        var allGameIds = favsByGame.Keys.Union(purchasesByGame.Keys);
 
-            // Usernames distintos de los miembros que ya han comprado este juego.
+        var result = new List<GroupInsightDto>();
+        foreach (var gameId in allGameIds)
+        {
+            var wantedBy = favsByGame.TryGetValue(gameId, out var favList)
+                ? favList.Select(f => usernameById.GetValueOrDefault(f.UserId, "?")).Distinct().ToList()
+                : (List<string>)[];
+
             var purchasedBy = purchasesByGame.TryGetValue(gameId, out var purcs)
                 ? purcs.Select(p => usernameById.GetValueOrDefault(p.UserId, "?")).Distinct().ToList()
                 : (List<string>)[];
 
-            // Usa el primer favorito con la propiedad Game cargada para obtener los metadatos de presentación.
-            // El repositorio carga Game con su colección Releases mediante eager loading.
-            var firstFav = favList.FirstOrDefault(f => f.Game is not null);
+            // Coincidencia: más de 1 persona lo desea, más de 1 lo ha comprado,
+            // o al menos 1 lo desea Y al menos 1 lo ha comprado.
+            bool isCoincidence = wantedBy.Count > 1
+                || purchasedBy.Count > 1
+                || (wantedBy.Count >= 1 && purchasedBy.Count >= 1);
 
-            // Fecha de lanzamiento más temprana entre todas las plataformas.
-            var releaseDate = firstFav?.Game?.Releases.OrderBy(r => r.ReleaseDate).FirstOrDefault()?.ReleaseDate;
+            if (!isCoincidence) continue;
+
+            // Metadatos del juego: favoritos tienen Releases cargados; compras también tras el fix del repositorio.
+            var game = favList?.FirstOrDefault(f => f.Game is not null)?.Game
+                    ?? purcs?.FirstOrDefault(p => p.Game is not null)?.Game;
+
+            var releaseDate = game?.Releases.OrderBy(r => r.ReleaseDate).FirstOrDefault()?.ReleaseDate;
+            var coverUrl = game?.CoverImageUrl?.Replace("/t_thumb/", "/t_cover_big/");
 
             result.Add(new GroupInsightDto(
                 GameId: gameId,
-                GameName: firstFav?.Game?.Name ?? $"Juego #{gameId}",
-                CoverImageUrl: firstFav?.Game?.CoverImageUrl,
+                GameName: game?.Name ?? $"Juego #{gameId}",
+                CoverImageUrl: coverUrl,
                 ReleaseDate: releaseDate,
                 WantedBy: wantedBy,
                 PurchasedBy: purchasedBy));
         }
 
-        // Los juegos más populares (más miembros que los desean) aparecen primero.
-        return result.OrderByDescending(r => r.WantedBy.Count).ToList().AsReadOnly();
+        // Los juegos con más miembros que los desean aparecen primero.
+        return result.OrderByDescending(r => r.WantedBy.Count).ThenByDescending(r => r.PurchasedBy.Count).ToList().AsReadOnly();
     }
 }

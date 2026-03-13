@@ -7,12 +7,9 @@ using NSubstitute;
 namespace GameList.Api.Tests.Unit.Handlers;
 
 /// <summary>
-/// Tests unitarios para <see cref="GetGroupInsightsHandler"/> con repositorios mockeados.
-/// Verifican la lógica de agregación: usuario sin grupo devuelve lista vacía,
-/// y usuario con favoritos devuelve insights correctamente agregados.
-/// Nota: las propiedades de navegación Game de los favoritos serán null en los mocks
-/// (EF Core no las carga fuera del contexto), por lo que el nombre del juego
-/// cae al fallback "Juego #{gameId}" — esto es comportamiento esperado y válido.
+/// Tests unitarios para <see cref="GetGroupInsightsHandler"/>.
+/// Solo hay coincidencia cuando: más de 1 persona desea el juego, más de 1 lo ha comprado,
+/// o al menos 1 lo desea Y al menos 1 lo ha comprado.
 /// </summary>
 public sealed class GetGroupInsightsHandlerTests
 {
@@ -29,7 +26,6 @@ public sealed class GetGroupInsightsHandlerTests
     [Fact]
     public async Task Handle_UsuarioSinGrupo_DevuelveListaVacia()
     {
-        // El usuario existe pero no pertenece a ningún grupo (GroupId = null).
         var user = UserEntity.Create("alice", "alice@test.com", "hash");
         userRepo.GetByIdAsync(1, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<UserEntity?>(user));
@@ -37,25 +33,18 @@ public sealed class GetGroupInsightsHandlerTests
         var result = await sut.Handle(new GetGroupInsightsQuery(1), CancellationToken.None);
 
         result.Should().BeEmpty();
-        // No debe consultar favoritos si el usuario no tiene grupo.
         await favRepo.DidNotReceive().GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_ConFavoritoDeGrupo_DevuelveInsightConUsernameEnWantedBy()
+    public async Task Handle_SoloUnUsuarioConFavorito_NoEsCoincidencia()
     {
-        // Usuario miembro de un grupo con gameId=100 marcado como favorito.
-        var user = UserEntity.Create("alice", "alice@test.com", "hash");
-        user.JoinGroup(42);
-
-        // user.Id = 0 porque EF Core no lo ha asignado (entidad sin persistir).
-        // fav.UserId = 0 coincide con user.Id = 0 → el lookup en usernameById funciona.
+        // Un único miembro con el juego en favoritos → no es coincidencia.
+        var alice = UserEntity.Create("alice", "alice@test.com", "hash");
+        alice.JoinGroup(42);
         var fav = GameFavoriteEntity.Create(userId: 0, gameId: 100);
 
-        userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<UserEntity?>(user));
-        userRepo.GetByGroupIdAsync(42, Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<IReadOnlyList<UserEntity>>(new[] { user }));
+        SetupGroup(42, alice);
         favRepo.GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<GameFavoriteEntity>>(new[] { fav }));
         purchaseRepo.GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())
@@ -63,10 +52,74 @@ public sealed class GetGroupInsightsHandlerTests
 
         var result = await sut.Handle(new GetGroupInsightsQuery(1), CancellationToken.None);
 
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Handle_DosUsuariosConMismoFavorito_EsCoincidencia()
+    {
+        // Dos miembros del grupo marcan el mismo juego como favorito → coincidencia.
+        var alice = UserEntity.Create("alice", "alice@test.com", "hash");
+        var bob = UserEntity.Create("bob", "bob@test.com", "hash");
+        alice.JoinGroup(42);
+        bob.JoinGroup(42);
+
+        // alice.Id = 0, bob.Id = 0 en entidades sin persistir → ambos caen al mismo userId=0.
+        // Usamos GameFavoriteEntity con userId distintos para simular dos personas.
+        var favAlice = GameFavoriteEntity.Create(userId: 0, gameId: 100);
+        var favBob = GameFavoriteEntity.Create(userId: 1, gameId: 100);
+
+        SetupGroupWithTwo(42, alice, bob);
+        favRepo.GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<GameFavoriteEntity>>(new[] { favAlice, favBob }));
+        purchaseRepo.GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<GamePurchaseEntity>>(Array.Empty<GamePurchaseEntity>()));
+
+        var result = await sut.Handle(new GetGroupInsightsQuery(1), CancellationToken.None);
+
         result.Should().HaveCount(1);
         result[0].GameId.Should().Be(100);
-        // "alice" aparece en WantedBy porque tiene el juego 100 como favorito.
-        result[0].WantedBy.Should().ContainSingle().Which.Should().Be("alice");
-        result[0].PurchasedBy.Should().BeEmpty();
+        result[0].WantedBy.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Handle_UnFavoritoYUnaCompraDelMismoJuego_EsCoincidencia()
+    {
+        // Un miembro lo desea y otro lo ha comprado → coincidencia ("ambas").
+        var alice = UserEntity.Create("alice", "alice@test.com", "hash");
+        var bob = UserEntity.Create("bob", "bob@test.com", "hash");
+        alice.JoinGroup(42);
+        bob.JoinGroup(42);
+
+        var fav = GameFavoriteEntity.Create(userId: 0, gameId: 100);
+        var purchase = GamePurchaseEntity.Create(userId: 1, gameId: 100);
+
+        SetupGroupWithTwo(42, alice, bob);
+        favRepo.GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<GameFavoriteEntity>>(new[] { fav }));
+        purchaseRepo.GetByUserIdsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<GamePurchaseEntity>>(new[] { purchase }));
+
+        var result = await sut.Handle(new GetGroupInsightsQuery(1), CancellationToken.None);
+
+        result.Should().HaveCount(1);
+        result[0].WantedBy.Should().ContainSingle();
+        result[0].PurchasedBy.Should().ContainSingle();
+    }
+
+    private void SetupGroup(int groupId, UserEntity member)
+    {
+        userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<UserEntity?>(member));
+        userRepo.GetByGroupIdAsync(groupId, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<UserEntity>>(new[] { member }));
+    }
+
+    private void SetupGroupWithTwo(int groupId, UserEntity m1, UserEntity m2)
+    {
+        userRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<UserEntity?>(m1));
+        userRepo.GetByGroupIdAsync(groupId, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<UserEntity>>(new[] { m1, m2 }));
     }
 }

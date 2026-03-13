@@ -201,11 +201,12 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     }
 
     [Fact]
-    public async Task GetGroupInsights_ConFavoritoEnGrupo_DevuelveInsight()
+    public async Task GetGroupInsights_ConFavoritoYCompraEnGrupo_DevuelveInsight()
     {
-        // Crear grupo y añadir un favorito
+        // Crear grupo y marcar el mismo juego como favorito Y comprado (coincidencia: alguien lo desea Y alguien lo tiene).
         await client.SendAsync(Req(HttpMethod.Post, "/api/social/groups", new { name = "Insights Test" }));
         await client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{gameId}"));
+        await client.SendAsync(Req(HttpMethod.Post, $"/api/social/purchases/{gameId}"));
 
         var response = await client.SendAsync(Req(HttpMethod.Get, "/api/social/group"));
 

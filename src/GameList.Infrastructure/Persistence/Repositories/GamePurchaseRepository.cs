@@ -35,7 +35,7 @@ internal sealed class GamePurchaseRepository : IGamePurchaseRepository
     /// <returns>Lista de compras con datos del juego incluidos.</returns>
     public async Task<IReadOnlyList<GamePurchaseEntity>> GetByUserIdsAsync(IReadOnlyList<int> userIds, CancellationToken ct) =>
         await context.GamePurchases
-            .Include(p => p.Game)
+            .Include(p => p.Game).ThenInclude(g => g!.Releases)
             .Where(p => userIds.Contains(p.UserId))
             .ToListAsync(ct);
 
