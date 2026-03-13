@@ -49,12 +49,14 @@
       </div>
 
       <div v-else class="calendar-grid">
+        <div class="week-header-cell" v-for="wd in WEEK_DAYS" :key="wd">{{ wd }}</div>
         <DayCell
-          v-for="day in allDaysInMonth"
+          v-for="(day, index) in allDaysInMonth"
           :key="day"
           :date="day"
           :releases="releasesForDay(day)"
           :game-status="gameStatus"
+          :style="index === 0 ? { gridColumnStart: firstDayColumnStart } : undefined"
           @game-selected="openGameDetail"
           @show-more="openDayReleases"
         />
@@ -120,6 +122,13 @@ const selectedDayReleases = ref(null)
 const selectedDayDate = ref(null)
 
 const monthName = computed(() => MONTH_NAMES[selectedMonth.value - 1])
+
+const WEEK_DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+
+const firstDayColumnStart = computed(() => {
+  const dayOfWeek = new Date(currentYear, selectedMonth.value - 1, 1).getDay()
+  return ((dayOfWeek - 1 + 7) % 7) + 1
+})
 
 const allDaysInMonth = computed(() => {
   const count = new Date(currentYear, selectedMonth.value, 0).getDate()

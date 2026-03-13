@@ -143,6 +143,16 @@ a { color: #60a5fa; }
   gap: 0.5rem;
 }
 
+.week-header-cell {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #475569;
+  text-align: center;
+  padding: 0.25rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 /* ── Day cell ── */
 .day-cell {
   min-height: 140px;
@@ -345,6 +355,7 @@ a { color: #60a5fa; }
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .calendar-grid { grid-template-columns: repeat(4, 1fr); }
+  .week-header-cell { display: none; }
 }
 
 @media (max-width: 600px) {
