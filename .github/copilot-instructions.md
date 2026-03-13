@@ -1,7 +1,7 @@
 # GameList — GitHub Copilot Instructions
 
 ## Project
-Responsive ASP.NET 10 Blazor Web App displaying a calendar of video game releases for the current year. Data synced daily from IGDB (Twitch API). SQL Server 2025, EF Core 10, Docker. Architecture: Clean Architecture / Hexagonal.
+Responsive ASP.NET 10 web app (Vue 3 SPA + Minimal API) displaying a calendar of video game releases for the current year. Data synced daily from IGDB (Twitch API). PostgreSQL 17, EF Core 10, Docker. Architecture: Clean Architecture / Hexagonal.
 
 ## Architecture Overview
 
@@ -9,8 +9,8 @@ Responsive ASP.NET 10 Blazor Web App displaying a calendar of video game release
 GameList.Domain          → Entities, Value Objects, Ports — zero external deps
 GameList.Application     → CQRS (MediatR), DTOs, Mappers
 GameList.Infrastructure  → EF Core, IGDB HTTP Client, BackgroundService
-GameList.Web             → Blazor pages/components, Minimal API endpoints, DI root
-GameList.Api.Tests       → Integration tests (WebApplicationFactory)
+GameList.Web             → Vue 3 SPA (wwwroot), Minimal API endpoints, DI root
+GameList.Api.Tests       → Integration + unit tests (WebApplicationFactory)
 ```
 
 ## Coding Rules
@@ -23,8 +23,7 @@ GameList.Api.Tests       → Integration tests (WebApplicationFactory)
   - `GameReleaseDto`, `CalendarDayDto`, `PlatformDto`, `GameDetailDto`
   - `GetReleasesByMonthQuery`, `SyncGamesCommand`, `SyncGamesHandler`
   - `IgdbDataProviderAdapter`, `GameConfiguration`, `IgdbOptionsConfig`
-  - `CalendarPage`, `DayCellComponent`, `ReleasesEndpoint`
-  - `ReleasesEndpointTests`
+  - `ReleasesEndpoint`, `ReleasesEndpointTests`
 
 ### General
 - Constructor injection only.
@@ -51,21 +50,20 @@ GameList.Api.Tests       → Integration tests (WebApplicationFactory)
 - `PeriodicTimer` in BackgroundService.
 - `IOptions<T>` pattern for all configuration.
 
-### Web / Blazor
-- `@rendermode InteractiveServer` on interactive components.
-- Small, single-responsibility components.
-- `ISender` (MediatR) for queries/commands.
-- `TypedResults` in Minimal API endpoints.
-- No business logic in components or endpoints.
+### Web
+- Vue 3 SPA served as static files from `wwwroot`.
+- Minimal API endpoints with `TypedResults`.
+- No business logic in endpoints.
+- JWT in HttpOnly cookie (`gl_token`).
 
 ### Tests
-- xUnit + `WebApplicationFactory<Program>` + Testcontainers.MsSql (SQL Server 2025 container).
+- xUnit + `WebApplicationFactory<Program>` + Testcontainers.PostgreSql + NSubstitute.
 - `FakeGameDataProvider` as IGDB stub.
-- One test class per endpoint.
+- One test class per endpoint/domain area.
 - Naming: `Method_Scenario_ExpectedResult`.
 
 ## Do NOT
-- Put business logic in endpoints, components, or handlers.
+- Put business logic in endpoints or handlers.
 - Reference Infrastructure from Domain or Application.
 - Use AutoMapper.
 - Use EF Core data annotations on domain entities.
