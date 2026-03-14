@@ -53,6 +53,13 @@ public sealed class UserEntity
         return new UserEntity { Username = username.Trim(), Email = email.Trim().ToLowerInvariant(), PasswordHash = passwordHash, CreatedAt = DateTime.UtcNow };
     }
 
+    /// <summary>Actualiza el nombre de usuario.</summary>
+    public void ChangeUsername(string newUsername)
+    {
+        if (string.IsNullOrWhiteSpace(newUsername)) throw new ArgumentException("El nombre de usuario no puede estar vacío.", nameof(newUsername));
+        Username = newUsername.Trim();
+    }
+
     /// <summary>Asigna el usuario al grupo indicado guardando su clave primaria.</summary>
     public void JoinGroup(int groupId) => GroupId = groupId;
 

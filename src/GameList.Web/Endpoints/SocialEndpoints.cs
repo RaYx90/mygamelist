@@ -40,6 +40,8 @@ public static class SocialEndpoints
         api.MapGet("/group/members", GetGroupMembersGames);
         api.MapPost("/groups", CreateGroup);
         api.MapPost("/groups/join", JoinGroup);
+        api.MapGet("/favorites", GetMyFavorites);
+        api.MapGet("/purchases", GetMyPurchases);
         return app;
     }
 
@@ -103,6 +105,18 @@ public static class SocialEndpoints
     {
         var result = await sender.Send(new JoinGroupCommand(GetUserId(user), body.InviteCode), ct);
         if (result is null) return TypedResults.BadRequest("Código de invitación inválido.");
+        return TypedResults.Ok((object)result);
+    }
+
+    private static async Task<Ok<object>> GetMyFavorites(ISender sender, ClaimsPrincipal user, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetMyFavoritesQuery(GetUserId(user)), ct);
+        return TypedResults.Ok((object)result);
+    }
+
+    private static async Task<Ok<object>> GetMyPurchases(ISender sender, ClaimsPrincipal user, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetMyPurchasesQuery(GetUserId(user)), ct);
         return TypedResults.Ok((object)result);
     }
 }

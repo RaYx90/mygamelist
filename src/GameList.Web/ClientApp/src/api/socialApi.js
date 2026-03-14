@@ -62,3 +62,13 @@ export function getMyGroup() {
 export function getGroupMembersGames() {
   return client.get('/group/members')
 }
+
+/** Obtiene todos los favoritos del usuario autenticado. */
+export function getMyFavorites() {
+  return client.get('/favorites')
+}
+
+/** Obtiene todos los juegos comprados del usuario autenticado. */
+export function getMyPurchases() {
+  return client.get('/purchases')
+}

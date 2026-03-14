@@ -19,6 +19,19 @@ export async function register(username, email, password, inviteCode) {
   return res.json()
 }
 
+export async function changeUsername(newUsername) {
+  const res = await fetch('/api/auth/username', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ newUsername }),
+    credentials: 'same-origin'
+  })
+  if (res.status === 400) { const msg = await res.text(); throw new Error(msg || 'Nombre inválido') }
+  if (res.status === 409) { const data = await res.json(); throw new Error(data || 'Nombre ya en uso') }
+  if (!res.ok) throw new Error('Error al cambiar nombre')
+  return res.json()
+}
+
 export async function login(email, password) {
   const res = await fetch(`${BASE}/login`, {
     method: 'POST',

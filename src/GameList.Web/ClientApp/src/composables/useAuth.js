@@ -56,6 +56,10 @@ export function useAuth() {
     state.groupId = groupId
   }
 
+  function updateUsername(newUsername) {
+    state.username = newUsername
+  }
+
   function setState(data) {
     state.userId = data.userId ?? null
     state.username = data.username ?? null
@@ -79,6 +83,7 @@ export function useAuth() {
     init,
     login,
     logout,
-    updateGroupId
+    updateGroupId,
+    updateUsername
   }
 }

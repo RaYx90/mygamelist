@@ -23,6 +23,7 @@ public static class AuthEndpoints
         api.MapPost("/login", Login).WithName("Login");
         api.MapGet("/me", Me).WithName("Me").RequireAuthorization();
         api.MapPost("/logout", Logout).WithName("Logout");
+        api.MapPut("/username", ChangeUsername).WithName("ChangeUsername").RequireAuthorization();
         return app;
     }
 
@@ -70,6 +71,27 @@ public static class AuthEndpoints
         return TypedResults.Ok((object)new { dto.UserId, dto.Username, dto.Email, dto.GroupId });
     }
 
+    private static async Task<Results<Ok<object>, BadRequest<string>, Conflict<string>>> ChangeUsername(
+        ISender sender, IJwtTokenService jwtService,
+        IHostEnvironment env, HttpContext ctx,
+        ClaimsPrincipal principal, ChangeUsernameRequest body, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(body.NewUsername) || body.NewUsername.Trim().Length < 3)
+            return TypedResults.BadRequest("El nombre de usuario debe tener al menos 3 caracteres.");
+        try
+        {
+            var userId = int.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var newUsername = await sender.Send(new ChangeUsernameCommand(userId, body.NewUsername), ct);
+            // Re-emitir JWT con el nuevo nombre
+            var meDto = await sender.Send(new GetCurrentUserQuery(userId), ct);
+            var token = jwtService.GenerateToken(userId, newUsername, meDto!.Email, meDto.GroupId);
+            SetAuthCookie(ctx, token, env);
+            return TypedResults.Ok((object)new { username = newUsername });
+        }
+        catch (ConflictException ex) { return TypedResults.Conflict(ex.Message); }
+        catch (DomainException ex) { return TypedResults.BadRequest(ex.Message); }
+    }
+
     private static Ok Logout(HttpContext ctx)
     {
         ctx.Response.Cookies.Delete("gl_token");
@@ -101,3 +123,6 @@ public sealed record RegisterRequest(string Username, string Email, string Passw
 
 /// <summary>Cuerpo de la solicitud de inicio de sesión.</summary>
 public sealed record LoginRequest(string Email, string Password);
+
+/// <summary>Cuerpo de la solicitud de cambio de nombre de usuario.</summary>
+public sealed record ChangeUsernameRequest(string NewUsername);

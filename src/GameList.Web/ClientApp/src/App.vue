@@ -5,12 +5,13 @@
       Lanzamientos <span class="year-badge">{{ currentYear }}</span>
     </div>
     <nav class="app-nav">
-      <RouterLink v-if="isLoggedIn" to="/grupo" class="nav-link">Grupo</RouterLink>
-      <RouterLink v-if="!isLoggedIn" to="/login" class="nav-link">Entrar</RouterLink>
-      <RouterLink v-if="!isLoggedIn" to="/register" class="nav-link">Registrarse</RouterLink>
-      <button v-if="isLoggedIn" class="nav-link btn-link" @click="handleLogout">
-        {{ username }} · Salir
-      </button>
+      <template v-if="isLoggedIn">
+        <UserMenuDropdown />
+      </template>
+      <template v-else>
+        <RouterLink to="/login" class="nav-link">Entrar</RouterLink>
+        <RouterLink to="/register" class="nav-link">Registrarse</RouterLink>
+      </template>
     </nav>
   </header>
 
@@ -18,17 +19,11 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
 import { useAuth } from './composables/useAuth.js'
+import UserMenuDropdown from './components/user/UserMenuDropdown.vue'
 
-const router = useRouter()
-const { isLoggedIn, username, logout } = useAuth()
+const { isLoggedIn } = useAuth()
 const currentYear = new Date().getFullYear()
-
-async function handleLogout() {
-  await logout()
-  router.push('/login')
-}
 </script>
 
 <style scoped>
@@ -47,13 +42,6 @@ async function handleLogout() {
 .nav-link:hover {
   opacity: 1;
 }
-.btn-link {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  font-size: 0.9rem;
-}
 .app-title {
   font-size: 1.1rem;
   font-weight: 700;
@@ -61,4 +49,3 @@ async function handleLogout() {
   letter-spacing: 0.01em;
 }
 </style>
-
