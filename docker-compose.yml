@@ -53,7 +53,7 @@ services:
           cpus: "0.5"
           memory: "256M"
     ports:
-      - "127.0.0.1:1080:1080"
+      - "1080:1080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: "http://+:1080"

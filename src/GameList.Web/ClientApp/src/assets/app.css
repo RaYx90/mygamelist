@@ -362,6 +362,7 @@ a { color: #60a5fa; }
   .app-main { padding: 0.75rem; }
   .app-title { display: none; }
   .calendar-grid { grid-template-columns: 1fr; gap: 0.35rem; }
+  .calendar-grid > * { grid-column: 1 !important; }
   .week-header-cell { display: none; }
   .day-cell { min-height: auto; border-radius: 10px; padding: 0.5rem 0.6rem; }
   .day-cell.empty-day { display: none; }
