@@ -32,8 +32,9 @@ Calendario de lanzamientos de videojuegos para el año en curso, con sincronizac
 | Fuente de datos | IGDB API (Twitch) |
 | Traducción | LibreTranslate (contenedor Docker autoalojado) |
 | Resiliencia | Polly — retry con backoff exponencial |
-| Auth | JWT en cookie HttpOnly (`gl_token`) — SameSite=Strict |
-| Despliegue | Docker + Docker Compose |
+| Auth | JWT en cookie HttpOnly (`gl_token`) — SameSite=Lax |
+| Reverse Proxy | Caddy — TLS automático vía DuckDNS |
+| Despliegue | Docker + Docker Compose (4 servicios) |
 | Tests | xUnit + WebApplicationFactory + Testcontainers + NSubstitute |
 
 ## Arquitectura
@@ -81,6 +82,8 @@ IGDB_CLIENT_ID=tu_client_id
 IGDB_CLIENT_SECRET=tu_client_secret
 REGISTRATION_SECRET_CODE=codigo_secreto_para_registrarse
 DB_PASSWORD=GameList_Prod_2026!
+DUCKDNS_DOMAIN=tu-subdominio.duckdns.org
+DUCKDNS_TOKEN=tu_token_duckdns
 ```
 
 > Las credenciales de IGDB se obtienen en [dev.twitch.tv](https://dev.twitch.tv/console/apps) creando una aplicación con `Client Type = Confidential`.
@@ -91,9 +94,9 @@ DB_PASSWORD=GameList_Prod_2026!
 docker compose up -d
 ```
 
-Levanta **3 servicios**: base de datos (PostgreSQL), traductor (LibreTranslate) y la aplicación web.
+Levanta **4 servicios**: base de datos (PostgreSQL), traductor (LibreTranslate), la aplicación web y el reverse proxy (Caddy).
 
-La aplicación estará disponible en **http://localhost:8080**
+La aplicación estará disponible en **https://{tu-dominio-duckdns}:1443** (HTTPS vía Caddy) o directamente en el puerto interno 1080 si accedes sin proxy.
 
 En el primer arranque ocurre lo siguiente:
 1. **LibreTranslate** descarga los modelos de idioma (inglés + español) — puede tardar 2-3 minutos.
@@ -146,6 +149,8 @@ Los tests de integración usan **Testcontainers** — levantan un contenedor de 
 | `IGDB_CLIENT_SECRET` | Client Secret de la app de Twitch | ✅ |
 | `REGISTRATION_SECRET_CODE` | Código necesario para registrarse | ✅ |
 | `DB_PASSWORD` | Contraseña de PostgreSQL | ⬜ (tiene valor por defecto) |
+| `DUCKDNS_DOMAIN` | Subdominio DuckDNS (e.g. `miapp.duckdns.org`) | ✅ (para HTTPS) |
+| `DUCKDNS_TOKEN` | Token de DuckDNS para validación TLS | ✅ (para HTTPS) |
 
 ## Licencia
 
