@@ -77,15 +77,19 @@ public static class AuthEndpoints
     }
 
     /// <summary>
-    /// Escribe la cookie JWT: HttpOnly, SameSite=Strict, Secure en producción.
+    /// Escribe la cookie JWT: HttpOnly, SameSite=Lax, Secure solo si la conexión es HTTPS.
+    /// SameSite=Lax permite que la cookie se envíe en recargas y navegaciones de nivel superior,
+    /// evitando cierres de sesión inesperados en móvil.
+    /// Secure se activa según el protocolo de la request para que funcione en HTTP (Docker local)
+    /// y en HTTPS (producción).
     /// </summary>
-    private static void SetAuthCookie(HttpContext ctx, string token, IHostEnvironment env)
+    private static void SetAuthCookie(HttpContext ctx, string token, IHostEnvironment _env)
     {
         ctx.Response.Cookies.Append("gl_token", token, new CookieOptions
         {
             HttpOnly = true,
-            Secure = !env.IsDevelopment(),
-            SameSite = SameSiteMode.Strict,
+            Secure = ctx.Request.IsHttps,
+            SameSite = SameSiteMode.Lax,
             Expires = DateTimeOffset.UtcNow.AddDays(30),
             Path = "/"
         });

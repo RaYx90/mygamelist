@@ -3,6 +3,7 @@ using GameList.Infrastructure.Extensions;
 using GameList.Infrastructure.Persistence;
 using GameList.Web.Endpoints;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -48,17 +49,17 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// Trust reverse proxy headers (Caddy → X-Forwarded-Proto/For)
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 }
-
-if (!app.Environment.IsDevelopment())
-    app.UseHsts();
-
-if (!app.Environment.IsDevelopment())
-    app.UseHttpsRedirection();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();

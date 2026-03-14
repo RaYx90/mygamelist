@@ -1,0 +1,7 @@
+{$DUCKDNS_DOMAIN}:1443 {
+	tls {
+		dns duckdns {$DUCKDNS_TOKEN}
+	}
+
+	reverse_proxy web:1080
+}

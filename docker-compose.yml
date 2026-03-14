@@ -52,11 +52,11 @@ services:
         limits:
           cpus: "0.5"
           memory: "256M"
-    ports:
-      - "8080:8080"
+    expose:
+      - "1080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_URLS: "http://+:1080"
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=gamelist;Username=gamelist;Password=${DB_PASSWORD:-GameList_Prod_2026!}"
       Igdb__ClientId: "${IGDB_CLIENT_ID}"
       Igdb__ClientSecret: "${IGDB_CLIENT_SECRET}"
@@ -71,8 +71,35 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  caddy:
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
+    container_name: gamelist-caddy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: "64M"
+    ports:
+      - "1443:1443"
+    environment:
+      DUCKDNS_DOMAIN: "${DUCKDNS_DOMAIN}"
+      DUCKDNS_TOKEN: "${DUCKDNS_TOKEN}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     driver: local
   dataprotection_keys:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
     driver: local

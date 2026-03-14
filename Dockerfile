@@ -36,14 +36,14 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 # Non-root user for security
-RUN useradd --no-create-home --shell /bin/false appuser \
-    && chown -R appuser /app
+RUN useradd --no-create-home --shell /bin/false appuser
+
+COPY --from=build --chown=appuser /app/publish .
+
 USER appuser
 
-COPY --from=build /app/publish .
-
-EXPOSE 8080
-ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 1080
+ENV ASPNETCORE_URLS=http://+:1080
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 ENTRYPOINT ["dotnet", "GameList.Web.dll"]
