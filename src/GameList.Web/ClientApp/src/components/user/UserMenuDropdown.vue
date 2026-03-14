@@ -124,6 +124,9 @@
               <img v-if="game.coverImageUrl" :src="game.coverImageUrl" :alt="game.gameName" class="panel-thumb" />
               <span v-else class="panel-thumb-ph">🎮</span>
               <span class="panel-game-name">{{ game.gameName }}</span>
+              <button class="panel-item-remove" @click="removeFromPanel(game.gameId)" title="Quitar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
             </li>
           </ul>
         </div>
@@ -137,7 +140,7 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../../composables/useAuth.js'
 import { changeUsername } from '../../api/authApi.js'
-import { getMyFavorites, getMyPurchases } from '../../api/socialApi.js'
+import { getMyFavorites, getMyPurchases, removeFavorite, unmarkPurchased } from '../../api/socialApi.js'
 
 const router = useRouter()
 const { username, isLoggedIn, logout, updateUsername } = useAuth()
@@ -263,6 +266,21 @@ async function openPanel(type) {
 }
 function closePanel() { panelType.value = null }
 function backToMenu() { panelType.value = null; open.value = true }
+
+async function removeFromPanel(gameId) {
+  try {
+    if (panelType.value === 'favorites') {
+      await removeFavorite(gameId)
+      window.dispatchEvent(new CustomEvent('game-status-changed', { detail: { type: 'favorite', gameId, added: false } }))
+    } else {
+      await unmarkPurchased(gameId)
+      window.dispatchEvent(new CustomEvent('game-status-changed', { detail: { type: 'purchase', gameId, added: false } }))
+    }
+    panelItems.value = panelItems.value.filter(g => g.gameId !== gameId)
+  } catch (e) {
+    console.error('Error al quitar item del panel', e)
+  }
+}
 
 // ── Logout ─────────────────────────────────────────────────────────────────
 async function handleLogout() {
@@ -546,6 +564,23 @@ async function handleLogout() {
   color: #e2e8f0;
   line-height: 1.3;
 }
+.panel-item-remove {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+.panel-item-remove svg { width: 14px; height: 14px; }
+.panel-item:hover .panel-item-remove { opacity: 1; }
+.panel-item-remove:hover { color: #ef4444; }
 
 .panel-enter-active, .panel-leave-active { transition: opacity 0.2s; }
 .panel-enter-active .side-panel, .panel-leave-active .side-panel { transition: transform 0.25s ease; }

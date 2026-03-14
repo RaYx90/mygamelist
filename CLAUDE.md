@@ -191,3 +191,5 @@ All code in **English** with **type suffixes**:
 | 2026-03-14 | Contadores favoritos/compras se actualizan en tiempo real via CustomEvent game-status-changed |
 | 2026-03-14 | Favicon emoji 🎮, título en español, lang="es" |
 | 2026-03-14 | Panel favoritos/compras: botón ← volver al menú + ✕ cerrar |
+| 2026-03-14 | Panel favoritos/compras: botón × en cada item para quitar directamente — contador sincronizado vía game-status-changed (sin doble decremento) |
+| 2026-03-14 | Fix: Microsoft.EntityFrameworkCore.Relational fijado a 9.0.4 en tests para eliminar warning MSB3277 |
