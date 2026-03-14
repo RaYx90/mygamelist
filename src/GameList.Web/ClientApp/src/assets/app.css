@@ -361,12 +361,17 @@ a { color: #60a5fa; }
 @media (max-width: 600px) {
   .app-main { padding: 0.75rem; }
   .app-title { display: none; }
-  .calendar-grid { grid-template-columns: 1fr; }
-  .day-cell { min-height: auto; }
+  .calendar-grid { grid-template-columns: 1fr; gap: 0.35rem; }
+  .week-header-cell { display: none; }
+  .day-cell { min-height: auto; border-radius: 10px; padding: 0.5rem 0.6rem; }
   .day-cell.empty-day { display: none; }
+  .day-header { margin-bottom: 0.3rem; }
+  .day-number { font-size: 1rem; }
+  .day-weekday { font-size: 0.75rem; }
   .filters-bar { gap: 0.4rem; }
   .filter-select { flex: 1; min-width: calc(50% - 0.2rem); }
   .search-box { width: 100%; flex: none; }
   .modal-body { flex-direction: column; align-items: center; }
   .detail-cover, .detail-cover-placeholder { width: 100px; height: 130px; }
+  .day-releases-list { grid-template-columns: 1fr; }
 }
