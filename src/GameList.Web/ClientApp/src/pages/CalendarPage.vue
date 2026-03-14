@@ -104,7 +104,9 @@
     :is-purchased="gameStatus?.myPurchases?.includes(selectedGame.gameId)"
     :fav-count="(gameStatus?.myFavorites?.includes(selectedGame.gameId) ? 1 : 0) + (gameStatus?.favoritedCountInGroup?.[selectedGame.gameId] ?? 0)"
     :purchased-by="gameStatus?.purchasedByInGroup?.[selectedGame.gameId] ?? []"
+    :can-go-back="!!previousDayDate"
     @close="closeGameDetail"
+    @go-back="goBackToDayReleases"
     @toggle-favorite="toggleFavorite"
     @toggle-purchase="togglePurchase"
   />
@@ -141,6 +143,7 @@ const selectedView = ref(window.innerWidth < 640 ? 'day' : 'calendar')
 const selectedGame = ref(null)
 const selectedDayReleases = ref(null)
 const selectedDayDate = ref(null)
+const previousDayDate = ref(null)
 
 onMounted(async () => {
   await Promise.all([
@@ -181,12 +184,22 @@ async function handleNextDay() {
 }
 
 function openGameDetail(release) {
+  previousDayDate.value = selectedDayDate.value
   closeDayReleases()
   selectedGame.value = release
 }
 
 function closeGameDetail() {
   selectedGame.value = null
+  previousDayDate.value = null
+}
+
+function goBackToDayReleases() {
+  selectedGame.value = null
+  if (previousDayDate.value) {
+    openDayReleases(previousDayDate.value)
+    previousDayDate.value = null
+  }
 }
 
 function openDayReleases(dateStr) {

@@ -1,7 +1,10 @@
 <template>
   <div class="modal-overlay" @click="emit('close')">
     <div class="modal-content" @click.stop>
-      <button class="modal-close" @click="emit('close')">✕</button>
+      <div class="modal-actions">
+        <button v-if="canGoBack" class="modal-action-btn" @click="emit('go-back')" title="Volver al listado del día">←</button>
+        <button class="modal-action-btn" @click="emit('close')">✕</button>
+      </div>
       <div class="modal-body">
         <div class="modal-cover">
           <img
@@ -14,13 +17,16 @@
         </div>
         <div class="modal-info">
           <h2 class="game-title">{{ game.gameName }}</h2>
-          <div
-            class="release-type-badge badge mb-2"
-            :class="game.releaseType === 1 ? 'bg-warning text-dark' : 'bg-info text-dark'"
-          >
-            {{ game.releaseType === 1
-              ? 'Exclusivo de plataforma'
-              : `Multiplataforma (${game.allPlatformLabels.join(', ')})` }}
+          <div class="badges-row mb-2">
+            <span class="game-badge badge-category">{{ categoryLabel }}</span>
+            <span
+              class="game-badge"
+              :class="game.releaseType === 1 ? 'badge-exclusive' : 'badge-multi'"
+            >
+              {{ game.releaseType === 1
+                ? 'Exclusivo de plataforma'
+                : `Multiplataforma (${game.allPlatformLabels.join(', ')})` }}
+            </span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Plataforma:</span>
@@ -69,23 +75,95 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useAuth } from '../../composables/useAuth.js'
 import { useFormatDate } from '../../composables/useFormatDate.js'
 
-defineProps({
+const CATEGORY_LABELS = {
+  0: '🎮 Juego base',
+  1: '🧩 DLC',
+  2: '📦 Expansión',
+  3: '🎁 Bundle',
+  4: '🔓 Expansión independiente',
+  5: '🔧 Mod',
+  6: '📺 Episodio',
+  7: '📅 Temporada',
+  8: '🔄 Remake',
+  9: '✨ Remasterización',
+  10: '➕ Juego ampliado',
+  11: '🔀 Port',
+  12: '🍴 Fork',
+  13: '📦 Pack',
+  14: '🔃 Actualización',
+  99: '❓ Desconocido'
+}
+
+const props = defineProps({
   game: { type: Object, required: true },
   isFavorite: { type: Boolean, default: false },
   isPurchased: { type: Boolean, default: false },
   favCount: { type: Number, default: 0 },
-  purchasedBy: { type: Array, default: () => [] }
+  purchasedBy: { type: Array, default: () => [] },
+  canGoBack: { type: Boolean, default: false }
 })
-const emit = defineEmits(['close', 'toggle-favorite', 'toggle-purchase'])
+const emit = defineEmits(['close', 'toggle-favorite', 'toggle-purchase', 'go-back'])
+
+const categoryLabel = computed(() => CATEGORY_LABELS[props.game.gameCategory] ?? CATEGORY_LABELS[99])
 
 const { isLoggedIn } = useAuth()
 const { formatDate } = useFormatDate()
 </script>
 
 <style scoped>
+.modal-actions {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.4rem;
+  z-index: 1;
+}
+.modal-action-btn {
+  background: #2d2d4e;
+  border: none;
+  color: #94a3b8;
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.15s, color 0.15s;
+}
+.modal-action-btn:hover {
+  background: #3d3d5e;
+  color: #e2e8f0;
+}
+.badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+.game-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  line-height: 1.2;
+}
+.badge-category {
+  background: #6c3483;
+  color: #fff;
+}
+.badge-exclusive {
+  background: #f59e0b;
+  color: #1a1a2e;
+}
+.badge-multi {
+  background: #06b6d4;
+  color: #1a1a2e;
+}
 .social-actions {
   display: flex;
   flex-wrap: wrap;

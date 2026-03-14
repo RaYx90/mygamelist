@@ -92,6 +92,7 @@ All code in **English** with **type suffixes**:
 ## Project Rules
 
 ### General
+- **After every change**: build .NET (`dotnet build`), build frontend (`npm run build`), rebuild and restart containers (`docker-compose build --no-cache web && docker-compose up -d web`). Always ensure the user sees the changes deployed.
 - Follow **SOLID** strictly.
 - Apply **DDD** in the Domain layer.
 - Small classes, single-responsibility methods.
@@ -185,3 +186,5 @@ All code in **English** with **type suffixes**:
 | 2026-03-14 | Cookie auth: SameSite=Lax, Secure based on request.IsHttps, ForwardedHeaders middleware |
 | 2026-03-14 | GroupPage redesign: tabs (Members/Insights), accordion, compact topbar, copy invite code |
 | 2026-03-14 | Show/hide password toggle on Login and Register pages |
+| 2026-03-14 | GameDetailModal: badge de categoría (tipo de juego), botón ← volver al listado del día |
+| 2026-03-14 | Build pipeline: siempre dotnet build + npm run build + docker-compose build/up tras cambios |
