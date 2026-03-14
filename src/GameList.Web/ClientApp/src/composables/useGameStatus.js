@@ -30,6 +30,7 @@ export function useGameStatus() {
         await addFavorite(gameId)
         gameStatus.value = { ...gameStatus.value, myFavorites: [...(gameStatus.value?.myFavorites ?? []), gameId] }
       }
+      window.dispatchEvent(new CustomEvent('game-status-changed', { detail: { type: 'favorite', gameId, added: !isFav } }))
     } catch (e) {
       console.error('Error al cambiar favorito', e)
     }
@@ -46,6 +47,7 @@ export function useGameStatus() {
         await markPurchased(gameId)
         gameStatus.value = { ...gameStatus.value, myPurchases: [...(gameStatus.value?.myPurchases ?? []), gameId] }
       }
+      window.dispatchEvent(new CustomEvent('game-status-changed', { detail: { type: 'purchase', gameId, added: !isPurchased } }))
     } catch (e) {
       console.error('Error al cambiar compra', e)
     }

@@ -188,3 +188,6 @@ All code in **English** with **type suffixes**:
 | 2026-03-14 | Show/hide password toggle on Login and Register pages |
 | 2026-03-14 | GameDetailModal: badge de categoría (tipo de juego), botón ← volver al listado del día |
 | 2026-03-14 | Build pipeline: siempre dotnet build + npm run build + docker-compose build/up tras cambios |
+| 2026-03-14 | Contadores favoritos/compras se actualizan en tiempo real via CustomEvent game-status-changed |
+| 2026-03-14 | Favicon emoji 🎮, título en español, lang="es" |
+| 2026-03-14 | Panel favoritos/compras: botón ← volver al menú + ✕ cerrar |

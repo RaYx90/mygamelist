@@ -102,6 +102,9 @@
       <div v-if="panelType" class="panel-overlay" @click.self="closePanel">
         <div class="side-panel">
           <div class="panel-header">
+            <button class="panel-back" @click="backToMenu" title="Volver al menú">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
             <h3 class="panel-title">
               {{ panelType === 'favorites' ? '❤️ Mis favoritos' : '✅ Mis compras' }}
             </h3>
@@ -148,8 +151,20 @@ function toggleMenu() { open.value = !open.value }
 function handleOutsideClick(e) {
   if (menuRef.value && !menuRef.value.contains(e.target)) open.value = false
 }
-onMounted(() => document.addEventListener('mousedown', handleOutsideClick))
-onBeforeUnmount(() => document.removeEventListener('mousedown', handleOutsideClick))
+function onGameStatusChanged(e) {
+  const { type, added } = e.detail
+  if (type === 'favorite') favCount.value = (favCount.value ?? 0) + (added ? 1 : -1)
+  else if (type === 'purchase') buyCount.value = (buyCount.value ?? 0) + (added ? 1 : -1)
+}
+
+onMounted(() => {
+  document.addEventListener('mousedown', handleOutsideClick)
+  window.addEventListener('game-status-changed', onGameStatusChanged)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('mousedown', handleOutsideClick)
+  window.removeEventListener('game-status-changed', onGameStatusChanged)
+})
 
 // ── Avatar ─────────────────────────────────────────────────────────────────
 const AVATAR_KEY = computed(() => `gl_avatar_${username.value}`)
@@ -247,6 +262,7 @@ async function openPanel(type) {
   finally { panelLoading.value = false }
 }
 function closePanel() { panelType.value = null }
+function backToMenu() { panelType.value = null; open.value = true }
 
 // ── Logout ─────────────────────────────────────────────────────────────────
 async function handleLogout() {
@@ -464,6 +480,7 @@ async function handleLogout() {
   border-bottom: 1px solid #2a2a3e;
 }
 .panel-title { font-size: 1rem; font-weight: 700; margin: 0; }
+.panel-back,
 .panel-close {
   background: none;
   border: none;
@@ -474,7 +491,9 @@ async function handleLogout() {
   border-radius: 4px;
   transition: color 0.15s;
 }
+.panel-back:hover,
 .panel-close:hover { color: #fff; }
+.panel-back svg,
 .panel-close svg { width: 1.1rem; height: 1.1rem; }
 
 .panel-spinner, .panel-empty {
