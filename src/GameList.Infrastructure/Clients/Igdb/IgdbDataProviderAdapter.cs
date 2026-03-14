@@ -13,7 +13,7 @@ namespace GameList.Infrastructure.Clients.Igdb;
 /// </summary>
 /// <remarks>
 /// Plataformas soportadas (AllowedPlatforms): PC(6), Switch(130), Switch 2(167), PS5(169), Xbox Series X|S(508).
-/// Juegos indie excluidos con <c>game.themes != (38)</c> donde 38 es el tema "Indie" en IGDB.
+/// IsIndie se detecta por tema 38 en IGDB y se guarda en BD como campo informativo (no filtra el sync).
 /// Paginación en bloques de 500 (máximo permitido por IGDB por request).
 /// </remarks>
 internal sealed class IgdbDataProviderAdapter : IGameDataProvider
@@ -73,15 +73,14 @@ internal sealed class IgdbDataProviderAdapter : IGameDataProvider
             // Query en lenguaje Apicalypse (formato propietario de IGDB):
             // - Filtra por rango de fecha Unix
             // - Solo plataformas de generación actual (AllowedPlatforms)
-            // - Excluye juegos con tema 38 (Indie) o juegos sin tema asignado que sean indie
-            // - La condición (game.themes = null | game.themes != (38)) incluye juegos sin temas
-            //   y excluye los que tienen el tema Indie explícitamente.
+            // - No se filtra por tema Indie (38): el etiquetado de IGDB es poco fiable
+            //   y excluye erróneamente juegos AAA (ej. Crimson Desert). IsIndie se guarda
+            //   como campo informativo en la BD pero no se usa para excluir del sync.
             var query =
                 ReleaseDateFields +
                 $"where date >= {startUnix} & date <= {endUnix}" +
                 $" & platform = ({AllowedPlatforms})" +
-                $" & game != null & platform != null" +
-                $" & (game.themes = null | game.themes != (38));" +
+                $" & game != null & platform != null;" +
                 $" limit {pageSize}; offset {offset};";
 
             var response = await httpClient.PostAsync(
