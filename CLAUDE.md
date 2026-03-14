@@ -193,3 +193,4 @@ All code in **English** with **type suffixes**:
 | 2026-03-14 | Panel favoritos/compras: botón ← volver al menú + ✕ cerrar |
 | 2026-03-14 | Panel favoritos/compras: botón × en cada item para quitar directamente — contador sincronizado vía game-status-changed (sin doble decremento) |
 | 2026-03-14 | Fix: Microsoft.EntityFrameworkCore.Relational fijado a 9.0.4 en tests para eliminar warning MSB3277 |
+| 2026-03-14 | Fix: MapCategory fallback cambiado de Unknown(99) a MainGame(0) — IGDB devuelve null en game_type para muchos juegos base; 213 juegos corregidos en BD |

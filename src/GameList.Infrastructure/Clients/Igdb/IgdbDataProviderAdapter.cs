@@ -137,11 +137,11 @@ internal sealed class IgdbDataProviderAdapter : IGameDataProvider
         return url;
     }
 
-    /// <summary>Convierte el entero de categoría de IGDB al enum interno. Devuelve Unknown si no está definido.</summary>
+    /// <summary>Convierte el entero de categoría de IGDB al enum interno. Devuelve MainGame si null o no definido.</summary>
     private static GameCategoryEnum MapCategory(int? category) =>
         category is int c && Enum.IsDefined(typeof(GameCategoryEnum), c)
             ? (GameCategoryEnum)c
-            : GameCategoryEnum.Unknown;
+            : GameCategoryEnum.MainGame;
 
     /// <summary>Convierte el código de región numérico de IGDB a nombre legible.</summary>
     private static string? MapRegion(int? regionCode) => regionCode switch
