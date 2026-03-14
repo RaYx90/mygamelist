@@ -23,7 +23,8 @@ internal sealed record IgdbGameModel(
     [property: JsonPropertyName("slug")] string Slug,
     [property: JsonPropertyName("summary")] string? Summary,
     [property: JsonPropertyName("cover")] IgdbCoverModel? Cover,
-    [property: JsonPropertyName("category")] int? Category,
+    /// <remarks>IGDB V4 usa el campo <c>game_type</c> (no <c>category</c>) para este valor.</remarks>
+    [property: JsonPropertyName("game_type")] int? Category,
     [property: JsonPropertyName("themes")] IReadOnlyList<IgdbThemeModel>? Themes
 );
 

@@ -62,34 +62,9 @@ public sealed class GetReleasesByMonthHandler
                             .AsReadOnly();
                         return dtos[0] with { AllPlatformLabels = allLabels };
                     })
-                    // Step 2: merge editions ("Game X" and "Game X: Deluxe Edition" → same entry)
-                    .GroupBy(r => GetBaseName(r.GameName))
-                    .Select(nameGroup =>
-                    {
-                        var entries = nameGroup
-                            .OrderBy(r => r.GameName.Length) // prefer shortest (base) name
-                            .ToList();
-                        var allLabels = entries
-                            .SelectMany(e => e.AllPlatformLabels)
-                            .Distinct()
-                            .ToList()
-                            .AsReadOnly();
-                        return entries[0] with { AllPlatformLabels = allLabels };
-                    })
                     .ToList()
                     .AsReadOnly()))
             .ToList()
             .AsReadOnly();
-    }
-
-    /// <summary>
-    /// Extrae el nombre base de un juego eliminando el subtítulo tras los dos puntos.
-    /// </summary>
-    /// <param name="name">Nombre completo del juego.</param>
-    /// <returns>Nombre base en mayúsculas para agrupar ediciones.</returns>
-    private static string GetBaseName(string name)
-    {
-        var sep = name.IndexOf(": ", StringComparison.OrdinalIgnoreCase);
-        return (sep > 0 ? name[..sep] : name).Trim().ToUpperInvariant();
     }
 }

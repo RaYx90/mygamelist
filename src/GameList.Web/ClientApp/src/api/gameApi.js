@@ -2,8 +2,8 @@ import { createHttpClient } from './httpClient.js'
 
 const client = createHttpClient('/api')
 
-export function getReleases(year, month, platformId) {
-  return client.getWithParams('/releases', { year, month, platformId })
+export function getReleases(year, month, platformId, category) {
+  return client.getWithParams('/releases', { year, month, platformId, category })
 }
 
 export function getPlatforms() {

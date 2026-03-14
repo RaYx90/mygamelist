@@ -85,4 +85,32 @@ public sealed class ReleasesEndpointTests : IClassFixture<CustomWebApplicationFa
 
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
     }
+
+    [Fact]
+    public async Task GetReleasesByMonth_WithCategoryMainGame_ReturnsData()
+    {
+        await SeedDataAsync();
+        var year = DateTime.UtcNow.Year;
+
+        // Todos los juegos del FakeGameDataProvider son MainGame (category=0)
+        var response = await client.GetAsync($"/api/releases?year={year}&month=3&category=0");
+
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().NotBe("[]");
+    }
+
+    [Fact]
+    public async Task GetReleasesByMonth_WithCategoryDLC_ReturnsEmpty()
+    {
+        await SeedDataAsync();
+        var year = DateTime.UtcNow.Year;
+
+        // No hay DLCs en los datos de prueba (category=1)
+        var response = await client.GetAsync($"/api/releases?year={year}&month=3&category=1");
+
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Be("[]");
+    }
 }

@@ -19,6 +19,10 @@
             :selected-platform-id="selectedPlatformId"
             @platform-changed="handlePlatformChanged"
           />
+          <CategoryFilter
+            :selected-category="selectedCategory"
+            @category-changed="handleCategoryChanged"
+          />
           <div class="search-box">
             <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -113,6 +117,7 @@ import { useCalendar } from '../composables/useCalendar.js'
 import { useGameStatus } from '../composables/useGameStatus.js'
 import MonthNavigator from '../components/calendar/MonthNavigator.vue'
 import PlatformFilter from '../components/filters/PlatformFilter.vue'
+import CategoryFilter from '../components/filters/CategoryFilter.vue'
 import DayCell from '../components/calendar/DayCell.vue'
 import DayView from '../components/calendar/DayView.vue'
 import DayReleasesModal from '../components/calendar/DayReleasesModal.vue'
@@ -122,11 +127,11 @@ const WEEK_DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
 const route = useRoute()
 const {
-  currentYear, selectedMonth, selectedPlatformId, searchTerm,
+  currentYear, selectedMonth, selectedPlatformId, selectedCategory, searchTerm,
   isLoading, platforms, monthName, firstDayColumnStart,
   allDaysInMonth, filteredCalendarDays, calendarDays,
   selectedDay, releasesForDay, loadReleases, loadPlatforms,
-  onMonthChanged, onPlatformChanged, onSearchChanged,
+  onMonthChanged, onPlatformChanged, onCategoryChanged, onSearchChanged,
   goToPrevDay, goToNextDay,
 } = useCalendar()
 
@@ -159,6 +164,10 @@ async function handleMonthChanged(month) {
 
 async function handlePlatformChanged(id) {
   await onPlatformChanged(id)
+}
+
+async function handleCategoryChanged(category) {
+  await onCategoryChanged(category)
 }
 
 async function handlePrevDay() {

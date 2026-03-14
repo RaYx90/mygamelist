@@ -3,6 +3,7 @@ using GameList.Api.Tests.Common;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Net.Http.Headers;
 
 namespace GameList.Api.Tests.Endpoints;
 
@@ -154,5 +155,43 @@ public sealed class AuthEndpointTests : IClassFixture<CustomWebApplicationFactor
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    // ── Cambio de nombre ──────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ChangeUsername_ConTokenYNombreValido_Devuelve200ConNuevoNombre()
+    {
+        var (token, _) = await TestHelpers.RegisterAndLoginAsync(client);
+        var newName = "renamed" + Guid.NewGuid().ToString("N")[..8];
+
+        var response = await client.SendAsync(
+            TestHelpers.AuthRequest(HttpMethod.Put, "/api/auth/username", token, new { NewUsername = newName }));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        json.GetProperty("username").GetString().Should().Be(newName);
+        // El endpoint re-emite la cookie con el nuevo nombre
+        response.Headers.GetValues("Set-Cookie").Should()
+            .Contain(h => h.StartsWith("gl_token=", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ChangeUsername_SinToken_Devuelve401()
+    {
+        var response = await client.PutAsJsonAsync("/api/auth/username", new { NewUsername = "cualquiernombre" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task ChangeUsername_NombreMenorDe3Caracteres_Devuelve400()
+    {
+        var (token, _) = await TestHelpers.RegisterAndLoginAsync(client);
+
+        var response = await client.SendAsync(
+            TestHelpers.AuthRequest(HttpMethod.Put, "/api/auth/username", token, new { NewUsername = "ab" }));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 }

@@ -30,9 +30,10 @@ internal sealed class IgdbDataProviderAdapter : IGameDataProvider
     private const string AllowedPlatforms = "6,130,167,169,508";
 
     // Campos que se solicitan en la query Apicalypse. Se incluyen datos del juego, plataforma y temas.
+    // NOTA: en IGDB V4 el tipo de juego se llama "game_type" (no "category" como en v3).
     private const string ReleaseDateFields =
         "fields id,date,human,region,platform.id,platform.name,platform.slug,platform.abbreviation," +
-        "game.id,game.name,game.slug,game.summary,game.cover.url,game.category,game.themes.id; ";
+        "game.id,game.name,game.slug,game.summary,game.cover.url,game.game_type,game.themes.id; ";
 
     public IgdbDataProviderAdapter(
         HttpClient httpClient,

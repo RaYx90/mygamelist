@@ -81,7 +81,7 @@
               <span class="member-name">{{ member.username }}</span>
               <div class="member-counts">
                 <span class="count-badge fav" title="Favoritos">❤️ {{ member.favorites.length }}</span>
-                <span class="count-badge buy" title="Tiene">✅ {{ member.purchases.length }}</span>
+                <span class="count-badge buy" title="Comprado">✅ {{ member.purchases.length }}</span>
               </div>
               <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"/>
@@ -103,7 +103,7 @@
                 <div v-else class="member-empty">Sin favoritos</div>
 
                 <div v-if="member.purchases.length > 0" class="member-section mt-2">
-                  <p class="section-label">✅ Tiene</p>
+                  <p class="section-label">✅ Comprado</p>
                   <div class="game-chips">
                     <div v-for="g in member.purchases" :key="g.gameId" class="game-chip">
                       <img v-if="g.coverImageUrl" :src="g.coverImageUrl" :alt="g.gameName" class="chip-thumb" />
@@ -136,7 +136,7 @@
                 <span class="badge bg-success">✅ {{ game.purchasedBy.length }}</span>
               </div>
               <p v-if="game.wantedBy.length" class="insight-users">Quieren: {{ game.wantedBy.join(', ') }}</p>
-              <p v-if="game.purchasedBy.length" class="insight-users">Tienen: {{ game.purchasedBy.join(', ') }}</p>
+              <p v-if="game.purchasedBy.length" class="insight-users">Comprado por: {{ game.purchasedBy.join(', ') }}</p>
             </div>
           </div>
         </div>

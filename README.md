@@ -9,12 +9,14 @@ Calendario de lanzamientos de videojuegos para el año en curso, con sincronizac
 
 ## Características
 
-- 📅 Calendario mensual con todos los lanzamientos del año (solo juegos AAA)
+- 📅 Calendario mensual + vista diaria con todos los lanzamientos del año (solo juegos AAA)
 - 🔍 Búsqueda por nombre de juego en tiempo real
 - 🎯 Filtro por plataforma (PC, PS5, Xbox Series X|S, Switch, Switch 2)
+- 🗂️ Filtro por tipo de juego (Juego base, Remake, Remasterización, DLC, Expansión…) — por defecto muestra solo juegos base
 - 🏷️ Cada juego muestra si es exclusivo o multiplataforma
 - ❤️ Favoritos y marcado de juegos comprados (requiere cuenta)
 - 👥 Vista de grupo: ve qué juegos quieren o tienen comprados tus amigos
+- 👤 Menú de usuario: avatar, cambio de nombre, lista de favoritos y compras
 - 🔒 Autenticación segura — JWT en cookie HttpOnly (sin localStorage)
 - 🔄 Sincronización automática diaria con IGDB
 - 🌐 Descripciones de juegos traducidas al español automáticamente
@@ -52,11 +54,12 @@ src/
         ├── composables/      → useAuth, useCalendar, useGameStatus, useGameSocialData, useFormatDate
         ├── pages/            → CalendarPage, GroupPage, LoginPage, RegisterPage
         └── components/
-            ├── calendar/     → DayCell, DayReleasesModal, MonthNavigator
+            ├── calendar/     → DayCell, DayView, DayReleasesModal, MonthNavigator
             ├── game/         → GameDetailModal, ReleaseCard
-            └── filters/      → PlatformFilter
+            ├── filters/      → PlatformFilter, CategoryFilter
+            └── user/         → UserMenuDropdown
 tests/
-└── GameList.Api.Tests/       → 69 tests — integración (WebApplicationFactory + Testcontainers) + unitarios (NSubstitute)
+└── GameList.Api.Tests/       → 81 tests — integración (WebApplicationFactory + Testcontainers) + unitarios (NSubstitute)
 ```
 
 ## Requisitos
@@ -139,7 +142,7 @@ El servidor de desarrollo de Vite hace proxy al backend en `http://localhost:500
 dotnet test
 ```
 
-Los tests de integración usan **Testcontainers** — levantan un contenedor de PostgreSQL automáticamente, no necesitas nada más. 69 tests en total (39 integración + 30 unitarios).
+Los tests de integración usan **Testcontainers** — levantan un contenedor de PostgreSQL automáticamente, no necesitas nada más. 81 tests en total (51 integración + 30 unitarios).
 
 ## Variables de entorno
 

@@ -145,9 +145,10 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task JoinGroup_ConCodigoValido_DevuelveGroupDtoConMiembro()
     {
-        // Crear el grupo con un usuario diferente al del test
-        var (creatorToken, _) = await TestHelpers.RegisterAndLoginAsync(client);
-        var createResp = await client.SendAsync(
+        // Crear el grupo con un usuario diferente — usar cliente separado para no contaminar la cookie del test
+        var creatorClient = factory.CreateClient();
+        var (creatorToken, _) = await TestHelpers.RegisterAndLoginAsync(creatorClient);
+        var createResp = await creatorClient.SendAsync(
             TestHelpers.AuthRequest(HttpMethod.Post, "/api/social/groups", creatorToken, new { name = "Grupo Para Unirse" }));
         var groupJson = await createResp.Content.ReadFromJsonAsync<JsonElement>();
         var inviteCode = groupJson.GetProperty("inviteCode").GetString();
@@ -229,13 +230,62 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
         items[0].GetProperty("username").GetString().Should().NotBeNullOrEmpty();
     }
 
+    // ── Mis favoritos y compras ───────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetMyFavorites_ConFavoritosAgregados_DevuelveListaConJuego()
+    {
+        await client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{gameId}"));
+
+        var response = await client.SendAsync(Req(HttpMethod.Get, "/api/social/favorites"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var items = (await response.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray().ToList();
+        items.Should().HaveCountGreaterThanOrEqualTo(1);
+        items.Should().Contain(e => e.GetProperty("gameId").GetInt32() == gameId);
+    }
+
+    [Fact]
+    public async Task GetMyFavorites_SinFavoritos_DevuelveListaVacia()
+    {
+        var response = await client.SendAsync(Req(HttpMethod.Get, "/api/social/favorites"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Be("[]");
+    }
+
+    [Fact]
+    public async Task GetMyPurchases_ConComprasAgregadas_DevuelveListaConJuego()
+    {
+        await client.SendAsync(Req(HttpMethod.Post, $"/api/social/purchases/{gameId}"));
+
+        var response = await client.SendAsync(Req(HttpMethod.Get, "/api/social/purchases"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var items = (await response.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray().ToList();
+        items.Should().HaveCountGreaterThanOrEqualTo(1);
+        items.Should().Contain(e => e.GetProperty("gameId").GetInt32() == gameId);
+    }
+
+    [Fact]
+    public async Task GetMyPurchases_SinCompras_DevuelveListaVacia()
+    {
+        var response = await client.SendAsync(Req(HttpMethod.Get, "/api/social/purchases"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Be("[]");
+    }
+
     // ── Guards de autenticación ───────────────────────────────────────────────
 
     [Fact]
     public async Task SocialEndpoints_SinToken_Devuelve401()
     {
-        // Todos los endpoints sociales requieren autenticación — probamos con uno representativo
-        var response = await client.GetAsync("/api/social/group/info");
+        // Usar cliente fresco sin cookies para verificar que el endpoint requiere autenticación
+        var freshClient = factory.CreateClient();
+        var response = await freshClient.GetAsync("/api/social/group/info");
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

@@ -22,6 +22,7 @@ export function useCalendar() {
 
   const selectedMonth = ref(parseInt(route.query.month) || new Date().getMonth() + 1)
   const selectedPlatformId = ref(null)
+  const selectedCategory = ref(0) // 0 = MainGame por defecto; null = sin filtro
   const searchTerm = ref('')
   const isLoading = ref(true)
   const calendarDays = ref([])
@@ -58,7 +59,7 @@ export function useCalendar() {
   async function loadReleases() {
     isLoading.value = true
     try {
-      calendarDays.value = await getReleases(currentYear, selectedMonth.value, selectedPlatformId.value)
+      calendarDays.value = await getReleases(currentYear, selectedMonth.value, selectedPlatformId.value, selectedCategory.value)
     } finally {
       isLoading.value = false
     }
@@ -77,6 +78,11 @@ export function useCalendar() {
 
   async function onPlatformChanged(id) {
     selectedPlatformId.value = id
+    await loadReleases()
+  }
+
+  async function onCategoryChanged(category) {
+    selectedCategory.value = category
     await loadReleases()
   }
 
@@ -118,6 +124,7 @@ export function useCalendar() {
     currentYear,
     selectedMonth,
     selectedPlatformId,
+    selectedCategory,
     searchTerm,
     isLoading,
     calendarDays,
@@ -132,6 +139,7 @@ export function useCalendar() {
     loadPlatforms,
     onMonthChanged,
     onPlatformChanged,
+    onCategoryChanged,
     onSearchChanged,
     goToPrevDay,
     goToNextDay,
