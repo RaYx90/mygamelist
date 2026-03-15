@@ -324,4 +324,77 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
         var content = await response.Content.ReadAsStringAsync();
         content.Should().Be("[]");
     }
+
+    [Fact]
+    public async Task CreateGroup_ConNombreVacio_Devuelve400()
+    {
+        var response = await client.SendAsync(
+            Req(HttpMethod.Post, "/api/social/groups", new { name = "" }));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task JoinGroup_UsuarioYaEnGrupo_PuedeCambiarDeGrupo()
+    {
+        // El usuario ya tiene un grupo propio
+        await client.SendAsync(Req(HttpMethod.Post, "/api/social/groups", new { name = "Grupo Ya Existente" }));
+
+        // Crear otro grupo con un segundo usuario para tener un código válido
+        var otherClient = factory.CreateClient();
+        var (otherToken, _) = await TestHelpers.RegisterAndLoginAsync(otherClient);
+        var createResp = await otherClient.SendAsync(
+            TestHelpers.AuthRequest(HttpMethod.Post, "/api/social/groups", otherToken, new { name = "Otro Grupo" }));
+        var groupJson = await createResp.Content.ReadFromJsonAsync<JsonElement>();
+        var inviteCode = groupJson.GetProperty("inviteCode").GetString();
+        var newGroupId = groupJson.GetProperty("id").GetInt32();
+
+        // El primer usuario (ya en grupo) se une a otro — el backend lo permite (cambia de grupo)
+        var response = await client.SendAsync(
+            Req(HttpMethod.Post, "/api/social/groups/join", new { inviteCode }));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        json.GetProperty("id").GetInt32().Should().Be(newGroupId);
+    }
+
+    [Fact]
+    public async Task RemoveFavorite_SinHaberloAgregado_Devuelve200()
+    {
+        // RemoveFavorite es idempotente — no debe fallar aunque no existiera
+        var response = await client.SendAsync(Req(HttpMethod.Delete, $"/api/social/favorites/{gameId}"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task UnmarkPurchased_SinHaberloMarcado_Devuelve200()
+    {
+        // UnmarkPurchased es idempotente — no debe fallar aunque no existiera
+        var response = await client.SendAsync(Req(HttpMethod.Delete, $"/api/social/purchases/{gameId}"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GetGroupMembers_ConFavoritosYCompras_DevuelveEstructuraCorrecta()
+    {
+        await client.SendAsync(Req(HttpMethod.Post, "/api/social/groups", new { name = "Members Detail Test" }));
+        await client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{gameId}"));
+        await client.SendAsync(Req(HttpMethod.Post, $"/api/social/purchases/{gameId}"));
+
+        var response = await client.SendAsync(Req(HttpMethod.Get, "/api/social/group/members"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var items = (await response.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray().ToList();
+        items.Should().HaveCountGreaterThanOrEqualTo(1);
+        var member = items[0];
+        member.GetProperty("username").GetString().Should().NotBeNullOrEmpty();
+        member.GetProperty("favorites").EnumerateArray().Should().HaveCountGreaterThanOrEqualTo(1);
+        member.GetProperty("purchases").EnumerateArray().Should().HaveCountGreaterThanOrEqualTo(1);
+        // Verificar estructura de GameSummaryDto dentro de favoritos
+        var fav = member.GetProperty("favorites").EnumerateArray().First();
+        fav.GetProperty("gameId").GetInt32().Should().BePositive();
+        fav.GetProperty("gameName").GetString().Should().NotBeNullOrEmpty();
+    }
 }

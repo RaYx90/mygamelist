@@ -194,4 +194,73 @@ public sealed class AuthEndpointTests : IClassFixture<CustomWebApplicationFactor
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
+
+    [Fact]
+    public async Task ChangeUsername_ConNombreDuplicado_Devuelve400()
+    {
+        // Registrar un usuario con nombre conocido
+        var id = Guid.NewGuid().ToString("N")[..12];
+        var existingName = $"taken{id}";
+        await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            Username = existingName,
+            Email = $"{id}@test.com",
+            Password = "TestPass1!",
+            InviteCode = TestHelpers.RegistrationSecret
+        });
+
+        // Registrar otro usuario e intentar usar el nombre ya existente
+        var (token, _) = await TestHelpers.RegisterAndLoginAsync(client);
+        var response = await client.SendAsync(
+            TestHelpers.AuthRequest(HttpMethod.Put, "/api/auth/username", token, new { NewUsername = existingName }));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task ChangeUsername_ConNombreDeEspacios_Devuelve400()
+    {
+        var (token, _) = await TestHelpers.RegisterAndLoginAsync(client);
+
+        var response = await client.SendAsync(
+            TestHelpers.AuthRequest(HttpMethod.Put, "/api/auth/username", token, new { NewUsername = "   " }));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    // ── Me ────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Me_ConToken_Devuelve200ConDatosDelUsuario()
+    {
+        var (token, userId) = await TestHelpers.RegisterAndLoginAsync(client);
+
+        var response = await client.SendAsync(
+            TestHelpers.AuthRequest(HttpMethod.Get, "/api/auth/me", token));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        json.GetProperty("userId").GetInt32().Should().Be(userId);
+        json.GetProperty("username").GetString().Should().NotBeNullOrEmpty();
+    }
+
+    // ── Logout ────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Logout_ConToken_BorraCookieGlToken()
+    {
+        var (token, _) = await TestHelpers.RegisterAndLoginAsync(client);
+
+        var response = await client.SendAsync(
+            TestHelpers.AuthRequest(HttpMethod.Post, "/api/auth/logout", token));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        // La cookie debe borrarse (expirar al pasado)
+        var setCookie = response.Headers.GetValues("Set-Cookie")
+            .FirstOrDefault(h => h.StartsWith("gl_token=", StringComparison.Ordinal));
+        setCookie.Should().NotBeNull();
+        // El valor debe ser vacío o la fecha de expiración estar en el pasado
+        var cookieValue = setCookie!.Split(';')[0]["gl_token=".Length..];
+        cookieValue.Should().BeEmpty();
+    }
 }

@@ -1,4 +1,17 @@
 <template>
+  <GameDetailModal
+    v-if="selectedGame"
+    :game="selectedGame"
+    :is-favorite="selectedGameIsFavorite"
+    :is-purchased="selectedGameIsPurchased"
+    :fav-count="selectedGameFavCount"
+    :purchased-by="selectedGamePurchasedBy"
+    :can-go-back="false"
+    @close="closeGroupGameDetail"
+    @toggle-favorite="toggleGroupFavorite"
+    @toggle-purchase="toggleGroupPurchase"
+  />
+
   <div class="group-container">
 
     <!-- Sin grupo -->
@@ -93,7 +106,7 @@
                 <div v-if="member.favorites.length > 0" class="member-section">
                   <p class="section-label">❤️ Favoritos</p>
                   <div class="game-chips">
-                    <div v-for="g in member.favorites" :key="g.gameId" class="game-chip">
+                    <div v-for="g in member.favorites" :key="g.gameId" class="game-chip game-chip-clickable" @click="openGameDetail(g.gameId)">
                       <img v-if="g.coverImageUrl" :src="g.coverImageUrl" :alt="g.gameName" class="chip-thumb" />
                       <span v-else class="chip-thumb-ph">🎮</span>
                       <span class="chip-name">{{ g.gameName }}</span>
@@ -105,7 +118,7 @@
                 <div v-if="member.purchases.length > 0" class="member-section mt-2">
                   <p class="section-label">✅ Comprado</p>
                   <div class="game-chips">
-                    <div v-for="g in member.purchases" :key="g.gameId" class="game-chip">
+                    <div v-for="g in member.purchases" :key="g.gameId" class="game-chip game-chip-clickable" @click="openGameDetail(g.gameId)">
                       <img v-if="g.coverImageUrl" :src="g.coverImageUrl" :alt="g.gameName" class="chip-thumb" />
                       <span v-else class="chip-thumb-ph">🎮</span>
                       <span class="chip-name">{{ g.gameName }}</span>
@@ -125,7 +138,7 @@
           <p>No hay juegos que varios miembros compartan aún.</p>
         </div>
         <div v-else class="insights-grid">
-          <div v-for="game in insights" :key="game.gameId" class="insight-card">
+          <div v-for="game in insights" :key="game.gameId" class="insight-card insight-card-clickable" @click="openGameDetail(game.gameId, game)">
             <img v-if="game.coverImageUrl" :src="game.coverImageUrl" :alt="game.gameName" class="insight-cover" />
             <div v-else class="insight-cover-placeholder">🎮</div>
             <div class="insight-info">
@@ -147,7 +160,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { createGroup, joinGroup, getGroupInsights, getMyGroup, getGroupMembersGames } from '../api/socialApi.js'
+import { createGroup, joinGroup, getGroupInsights, getMyGroup, getGroupMembersGames, getStatus, addFavorite, removeFavorite, markPurchased, unmarkPurchased } from '../api/socialApi.js'
+import { getGameDetail } from '../api/gameApi.js'
+import GameDetailModal from '../components/game/GameDetailModal.vue'
 import { useAuth } from '../composables/useAuth.js'
 import { useFormatDate } from '../composables/useFormatDate.js'
 
@@ -168,6 +183,13 @@ const memberGames = ref([])
 const loadingInsights = ref(false)
 const activeTab = ref('members')
 const expandedMember = ref(null)
+
+// Game detail modal
+const selectedGame = ref(null)
+const selectedGameIsFavorite = ref(false)
+const selectedGameIsPurchased = ref(false)
+const selectedGameFavCount = ref(0)
+const selectedGamePurchasedBy = ref([])
 
 onMounted(async () => {
   if (groupId.value) await loadGroupData()
@@ -233,6 +255,91 @@ async function handleJoin() {
   } finally {
     joining.value = false
   }
+}
+
+async function openGameDetail(gameId, insightEntry = null) {
+  try {
+    const detail = await getGameDetail(gameId)
+    // GameDetailDto tiene releases[] (GameReleaseDto). Tomamos el primero y mezclamos summary.
+    const release = detail.releases?.[0] ?? {}
+    selectedGame.value = {
+      ...release,
+      gameName: release.gameName ?? detail.name,
+      coverImageUrl: release.coverImageUrl ?? detail.coverImageUrl,
+      summary: detail.summary,
+      summaryEs: detail.summaryEs,
+      allPlatformLabels: release.allPlatformLabels ?? [],
+      gameId: release.gameId ?? gameId,
+      gameCategory: release.gameCategory ?? 0,
+      releaseType: release.releaseType ?? 0,
+    }
+
+    // Estado social del usuario actual
+    const status = await getStatus([gameId])
+    selectedGameIsFavorite.value = status?.myFavorites?.includes(gameId) ?? false
+    selectedGameIsPurchased.value = status?.myPurchases?.includes(gameId) ?? false
+
+    // Contadores del grupo: usar insightEntry si se pasó, o buscar en los ya cargados
+    const insight = insightEntry ?? insights.value.find(i => i.gameId === gameId) ?? null
+    selectedGameFavCount.value = insight?.wantedBy?.length ?? 0
+    selectedGamePurchasedBy.value = insight?.purchasedBy ?? []
+  } catch {
+    // Si falla la carga, no abrir el modal
+    selectedGame.value = null
+  }
+}
+
+function closeGroupGameDetail() {
+  selectedGame.value = null
+}
+
+async function toggleGroupFavorite(gameId) {
+  const adding = !selectedGameIsFavorite.value
+  try {
+    if (!adding) {
+      await removeFavorite(gameId)
+      selectedGameIsFavorite.value = false
+    } else {
+      await addFavorite(gameId)
+      selectedGameIsFavorite.value = true
+    }
+    window.dispatchEvent(new CustomEvent('game-status-changed', { detail: { type: 'favorite', gameId, added: adding } }))
+    await reloadGroupData()
+  } catch (e) {
+    console.error('Error al cambiar favorito desde grupo:', e)
+  }
+}
+
+async function toggleGroupPurchase(gameId) {
+  const adding = !selectedGameIsPurchased.value
+  try {
+    if (!adding) {
+      await unmarkPurchased(gameId)
+      selectedGameIsPurchased.value = false
+    } else {
+      await markPurchased(gameId)
+      selectedGameIsPurchased.value = true
+    }
+    window.dispatchEvent(new CustomEvent('game-status-changed', { detail: { type: 'purchase', gameId, added: adding } }))
+    await reloadGroupData()
+  } catch (e) {
+    console.error('Error al cambiar compra desde grupo:', e)
+  }
+}
+
+// Recarga miembros e insights para actualizar contadores tras cambio de favorito/compra
+async function reloadGroupData() {
+  try {
+    const [ins, members] = await Promise.all([getGroupInsights(), getGroupMembersGames()])
+    insights.value = ins ?? []
+    memberGames.value = members ?? []
+    // Si hay un modal abierto, sincronizar sus contadores (o resetear si ya no es coincidencia)
+    if (selectedGame.value) {
+      const updatedInsight = ins?.find(i => i.gameId === selectedGame.value.gameId)
+      selectedGameFavCount.value = updatedInsight?.wantedBy?.length ?? 0
+      selectedGamePurchasedBy.value = updatedInsight?.purchasedBy ?? []
+    }
+  } catch { /* silencioso */ }
 }
 </script>
 
@@ -493,6 +600,13 @@ async function handleJoin() {
   color: #ddd;
   line-height: 1.3;
 }
+.game-chip-clickable {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 0.15rem 0.3rem;
+  transition: background 0.15s;
+}
+.game-chip-clickable:hover { background: rgba(255,255,255,0.07); }
 
 /* Insights */
 .insights-grid {
@@ -543,6 +657,11 @@ async function handleJoin() {
   margin-top: 0.2rem;
   margin-bottom: 0;
 }
+.insight-card-clickable {
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.insight-card-clickable:hover { border-color: #4a4a80; background: rgba(74,74,128,0.1); }
 .empty-state {
   text-align: center;
   color: #888;

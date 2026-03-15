@@ -129,7 +129,7 @@ All code in **English** with **type suffixes**:
 - Vue 3 SPA built with Vite, output copied to `wwwroot`.
 
 ### Tests
-- Integration + unit tests (69 total, all passing).
+- Integration + unit tests (~85 total, all passing).
 - One test class per endpoint/domain area.
 - Arrange-Act-Assert pattern.
 - Tests are independent — no shared mutable state.
@@ -163,7 +163,7 @@ All code in **English** with **type suffixes**:
 - [x] Web — Minimal API endpoints
 - [x] Web — Vue 3 + Vite SPA
 - [x] Docker & docker-compose (4 services: db, translate, web, caddy)
-- [x] Integration + unit tests (69 tests)
+- [x] Integration + unit tests (~85 tests, ampliados con cobertura de edge cases y handlers)
 - [x] IGDB configuration & token refresh
 - [x] Security: JWT in HttpOnly cookie (gl_token) — no localStorage
 - [x] Vue refactor: composables, httpClient factory, subdirectory components, no stores/
@@ -179,6 +179,9 @@ All code in **English** with **type suffixes**:
 | 2026-03-09 | Indie games excluded from IGDB sync and removed from frontend |
 | 2026-03-10 | Social features: favorites, purchases, groups (create/join), group insights |
 | 2026-03-13 | 69 tests passing (39 integration + 30 unit) |
+| 2026-03-15 | ~85 tests passing (44 integration + ~41 unit) — ampliados: auth logout/me, social edge cases, unit tests handlers favorites/purchases/currentUser/changeUsername |
+| 2026-03-15 | GroupPage click-to-detail: clicar juego en Miembros o Coincidencias abre GameDetailModal vía GET /api/games/{id} |
+| 2026-03-15 | Fix GroupPage modal: contadores ❤️/✅ del grupo siempre sincronizados — reloadGroupData resetea si el juego ya no es coincidencia, y openGameDetail busca en insights cargados si no se pasa insightEntry |
 | 2026-03-13 | JWT moved from localStorage to HttpOnly cookie gl_token — /me + /logout endpoints added |
 | 2026-03-13 | Vue refactored: useCalendar, useGameStatus, useGameSocialData, useFormatDate composables; httpClient.js factory; components/ reorganized in calendar/, game/, filters/ subdirs |
 | 2026-03-13 | All backend error messages translated to Spanish |

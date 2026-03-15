@@ -154,10 +154,19 @@ function toggleMenu() { open.value = !open.value }
 function handleOutsideClick(e) {
   if (menuRef.value && !menuRef.value.contains(e.target)) open.value = false
 }
-function onGameStatusChanged(e) {
-  const { type, added } = e.detail
-  if (type === 'favorite') favCount.value = (favCount.value ?? 0) + (added ? 1 : -1)
-  else if (type === 'purchase') buyCount.value = (buyCount.value ?? 0) + (added ? 1 : -1)
+async function onGameStatusChanged(e) {
+  const { type } = e.detail
+  try {
+    if (type === 'favorite') {
+      const favs = await getMyFavorites()
+      favCount.value = favs.length
+      if (panelType.value === 'favorites') panelItems.value = favs
+    } else if (type === 'purchase') {
+      const buys = await getMyPurchases()
+      buyCount.value = buys.length
+      if (panelType.value === 'purchases') panelItems.value = buys
+    }
+  } catch { /* silencioso */ }
 }
 
 onMounted(() => {

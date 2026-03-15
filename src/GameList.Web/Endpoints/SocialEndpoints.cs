@@ -93,8 +93,10 @@ public static class SocialEndpoints
         return TypedResults.Ok((object)result);
     }
 
-    private static async Task<Ok<object>> CreateGroup(ISender sender, ClaimsPrincipal user, CreateGroupRequest body, CancellationToken ct)
+    private static async Task<Results<Ok<object>, BadRequest<string>>> CreateGroup(ISender sender, ClaimsPrincipal user, CreateGroupRequest body, CancellationToken ct)
     {
+        if (string.IsNullOrWhiteSpace(body.Name))
+            return TypedResults.BadRequest("El nombre del grupo no puede estar vacío.");
         var result = await sender.Send(new CreateGroupCommand(GetUserId(user), body.Name), ct);
         return TypedResults.Ok((object)result);
     }
