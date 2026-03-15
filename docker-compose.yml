@@ -18,30 +18,6 @@ services:
       start_period: 180s
     restart: unless-stopped
 
-  db:
-    image: postgres:17-alpine
-    container_name: gamelist-db
-    deploy:
-      resources:
-        limits:
-          cpus: "0.25"
-          memory: "128M"
-    environment:
-      POSTGRES_DB: gamelist
-      POSTGRES_USER: gamelist
-      POSTGRES_PASSWORD: "${DB_PASSWORD:-GameList_Prod_2026!}"
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gamelist -d gamelist"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 15s
-    restart: unless-stopped
-
   web:
     build:
       context: .
@@ -57,7 +33,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: "http://+:1080"
-      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=gamelist;Username=gamelist;Password=${DB_PASSWORD:-GameList_Prod_2026!}"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=gamelist;Username=${POSTGRES_USER:-admin};Password=${POSTGRES_PASSWORD}"
       Igdb__ClientId: "${IGDB_CLIENT_ID}"
       Igdb__ClientSecret: "${IGDB_CLIENT_SECRET}"
       Registration__SecretCode: "${REGISTRATION_SECRET_CODE}"
@@ -65,41 +41,20 @@ services:
     volumes:
       - dataprotection_keys:/app/dataprotection-keys
     depends_on:
-      db:
-        condition: service_healthy
       translate:
         condition: service_healthy
-    restart: unless-stopped
-
-  caddy:
-    build:
-      context: .
-      dockerfile: Dockerfile.caddy
-    container_name: gamelist-caddy
-    deploy:
-      resources:
-        limits:
-          cpus: "0.25"
-          memory: "64M"
-    ports:
-      - "1443:1443"
-    environment:
-      DUCKDNS_DOMAIN: "${DUCKDNS_DOMAIN}"
-      DUCKDNS_TOKEN: "${DUCKDNS_TOKEN}"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - web
+    networks:
+      - default
+      - postgres-net
+      - caddy-net
     restart: unless-stopped
 
 volumes:
-  postgres_data:
-    driver: local
   dataprotection_keys:
     driver: local
-  caddy_data:
-    driver: local
-  caddy_config:
-    driver: local
+
+networks:
+  postgres-net:
+    external: true
+  caddy-net:
+    external: true

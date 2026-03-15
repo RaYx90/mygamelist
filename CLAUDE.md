@@ -59,10 +59,14 @@ Api.Tests      ← Web
 
 | Service | Image | Description |
 |---|---|---|
-| `db` | `postgres:17-alpine` | PostgreSQL 17 — persists data in named volume |
 | `translate` | `libretranslate/libretranslate` | Self-hosted translation (en→es), CPU limit 2.0 |
 | `web` | Local build | ASP.NET Core + Vue SPA, internal port 1080 |
-| `caddy` | Local build (`Dockerfile.caddy`) | Reverse proxy with TLS via DuckDNS, port 1443 |
+
+**Servicios externos** (sus propios repos/compose):
+| Service | Repo | Red externa |
+|---|---|---|
+| `postgres` | `postgres` | `postgres-net` |
+| `caddy-proxy` | `caddy-proxy` | `caddy-net` |
 
 ## Naming Conventions — Type Suffixes
 
@@ -162,7 +166,7 @@ All code in **English** with **type suffixes**:
 - [x] Social — favorites, purchases, groups (create/join), group insights
 - [x] Web — Minimal API endpoints
 - [x] Web — Vue 3 + Vite SPA
-- [x] Docker & docker-compose (4 services: db, translate, web, caddy)
+- [x] Docker & docker-compose (2 services: translate, web — db y caddy en repos externos)
 - [x] Integration + unit tests (~85 tests, ampliados con cobertura de edge cases y handlers)
 - [x] IGDB configuration & token refresh
 - [x] Security: JWT in HttpOnly cookie (gl_token) — no localStorage
@@ -186,6 +190,7 @@ All code in **English** with **type suffixes**:
 | 2026-03-13 | Vue refactored: useCalendar, useGameStatus, useGameSocialData, useFormatDate composables; httpClient.js factory; components/ reorganized in calendar/, game/, filters/ subdirs |
 | 2026-03-13 | All backend error messages translated to Spanish |
 | 2026-03-14 | Caddy reverse proxy with DuckDNS TLS — web internal port 1080, Caddy exposes 1443 |
+| 2026-03-15 | Infraestructura extraída: PostgreSQL y Caddy a repos independientes (postgres, caddy-proxy) — redes externas postgres-net y caddy-net |
 | 2026-03-14 | Cookie auth: SameSite=Lax, Secure based on request.IsHttps, ForwardedHeaders middleware |
 | 2026-03-14 | GroupPage redesign: tabs (Members/Insights), accordion, compact topbar, copy invite code |
 | 2026-03-14 | Show/hide password toggle on Login and Register pages |
