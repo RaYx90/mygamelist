@@ -45,8 +45,8 @@ services:
         condition: service_healthy
     networks:
       - default
-      - postgres-net
-      - caddy-net
+      - postgres
+      - caddy
     restart: unless-stopped
 
 volumes:
@@ -54,7 +54,7 @@ volumes:
     driver: local
 
 networks:
-  postgres-net:
+  postgres:
     external: true
-  caddy-net:
+  caddy:
     external: true
