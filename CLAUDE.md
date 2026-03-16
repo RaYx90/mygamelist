@@ -28,7 +28,7 @@ Responsive web app showing a calendar of video game releases for the current yea
 | Translation | LibreTranslate (self-hosted Docker container) |
 | Resilience | Polly (exponential backoff retry) |
 | Auth | JWT |
-| Deployment | Docker / Docker Compose (3 services) |
+| Deployment | Docker / Docker Compose (2 services + external postgres/caddy) |
 | Testing | xUnit + WebApplicationFactory + Testcontainers + NSubstitute |
 
 ## Architecture
@@ -65,8 +65,8 @@ Api.Tests      ← Web
 **Servicios externos** (sus propios repos/compose):
 | Service | Repo | Red externa |
 |---|---|---|
-| `postgres` | `postgres` | `postgres-net` |
-| `caddy-proxy` | `caddy-proxy` | `caddy-net` |
+| `postgres` | `postgres` | `postgres` |
+| `caddy-proxy` | `caddy-proxy` | `caddy` |
 
 ## Naming Conventions — Type Suffixes
 
@@ -167,7 +167,7 @@ All code in **English** with **type suffixes**:
 - [x] Web — Minimal API endpoints
 - [x] Web — Vue 3 + Vite SPA
 - [x] Docker & docker-compose (2 services: translate, web — db y caddy en repos externos)
-- [x] Integration + unit tests (~85 tests, ampliados con cobertura de edge cases y handlers)
+- [x] Integration + unit tests (109 tests, ampliados con cobertura de edge cases y handlers)
 - [x] IGDB configuration & token refresh
 - [x] Security: JWT in HttpOnly cookie (gl_token) — no localStorage
 - [x] Vue refactor: composables, httpClient factory, subdirectory components, no stores/
@@ -190,7 +190,9 @@ All code in **English** with **type suffixes**:
 | 2026-03-13 | Vue refactored: useCalendar, useGameStatus, useGameSocialData, useFormatDate composables; httpClient.js factory; components/ reorganized in calendar/, game/, filters/ subdirs |
 | 2026-03-13 | All backend error messages translated to Spanish |
 | 2026-03-14 | Caddy reverse proxy with DuckDNS TLS — web internal port 1080, Caddy exposes 1443 |
-| 2026-03-15 | Infraestructura extraída: PostgreSQL y Caddy a repos independientes (postgres, caddy-proxy) — redes externas postgres-net y caddy-net |
+| 2026-03-15 | Infraestructura extraída: PostgreSQL y Caddy a repos independientes (postgres, caddy-proxy) — redes externas postgres y caddy |
+| 2026-03-16 | Redes Docker renombradas: postgres-net → postgres, caddy-net → caddy (nombres globales sin sufijo) |
+| 2026-03-16 | 109 tests passing — 44 integration + 65 unit |
 | 2026-03-14 | Cookie auth: SameSite=Lax, Secure based on request.IsHttps, ForwardedHeaders middleware |
 | 2026-03-14 | GroupPage redesign: tabs (Members/Insights), accordion, compact topbar, copy invite code |
 | 2026-03-14 | Show/hide password toggle on Login and Register pages |
