@@ -133,7 +133,7 @@ All code in **English** with **type suffixes**:
 - Vue 3 SPA built with Vite, output copied to `wwwroot`.
 
 ### Tests
-- Integration + unit tests (~85 total, all passing).
+- Integration + unit tests (109 total, all passing — 44 integration + 65 unit).
 - One test class per endpoint/domain area.
 - Arrange-Act-Assert pattern.
 - Tests are independent — no shared mutable state.
