@@ -28,15 +28,15 @@ Calendario de lanzamientos de videojuegos para el año en curso, con sincronizac
 |---|---|
 | Backend | .NET 10 / ASP.NET Core |
 | Frontend | Vue 3 + Vite (SPA servida desde wwwroot) |
-| Base de datos | PostgreSQL 17 |
+| Base de datos | PostgreSQL 17 (contenedor externo compartido) |
 | ORM | EF Core 10 — Code First + Migrations |
 | CQRS | MediatR |
 | Fuente de datos | IGDB API (Twitch) |
 | Traducción | LibreTranslate (contenedor Docker autoalojado) |
 | Resiliencia | Polly — retry con backoff exponencial |
 | Auth | JWT en cookie HttpOnly (`gl_token`) — SameSite=Lax |
-| Reverse Proxy | Caddy — TLS automático vía DuckDNS |
-| Despliegue | Docker + Docker Compose (4 servicios) |
+| Reverse Proxy | Caddy (contenedor externo) — TLS automático vía DuckDNS |
+| Despliegue | Docker + Docker Compose (2 servicios + externos postgres/caddy) |
 | Tests | xUnit + WebApplicationFactory + Testcontainers + NSubstitute |
 
 ## Arquitectura
@@ -59,13 +59,29 @@ src/
             ├── filters/      → PlatformFilter, CategoryFilter
             └── user/         → UserMenuDropdown
 tests/
-└── GameList.Api.Tests/       → 81 tests — integración (WebApplicationFactory + Testcontainers) + unitarios (NSubstitute)
+└── GameList.Api.Tests/       → 109 tests — integración (WebApplicationFactory + Testcontainers) + unitarios (NSubstitute)
 ```
+
+## Servicios Docker
+
+| Servicio | Descripción |
+|---|---|
+| `gamelist-web` | ASP.NET Core + Vue SPA (puerto interno 1080) |
+| `gamelist-translate` | LibreTranslate en→es (autoalojado) |
+
+**Servicios externos** (sus propios repos):
+
+| Servicio | Repo | Red Docker |
+|---|---|---|
+| `postgres` | [postgres](https://github.com/RaYx90/postgres) | `postgres` |
+| `caddy-proxy` | [caddy-proxy](https://github.com/RaYx90/caddy-proxy) | `caddy` |
 
 ## Requisitos
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (o Docker Engine + Compose)
-- Credenciales de la [API de IGDB](https://api-docs.igdb.com/#getting-started) (gratuitas — se obtienen en el portal de Twitch)
+- Credenciales de la [API de IGDB](https://api-docs.igdb.com/#getting-started) (gratuitas — portal de Twitch)
+- PostgreSQL corriendo (contenedor `postgres` en red `postgres`)
+- Caddy corriendo (contenedor `caddy-proxy` en red `caddy`) para HTTPS
 
 ## Puesta en marcha
 
@@ -84,9 +100,7 @@ Crea un fichero `.env` en la raíz del proyecto:
 IGDB_CLIENT_ID=tu_client_id
 IGDB_CLIENT_SECRET=tu_client_secret
 REGISTRATION_SECRET_CODE=codigo_secreto_para_registrarse
-DB_PASSWORD=GameList_Prod_2026!
-DUCKDNS_DOMAIN=tu-subdominio.duckdns.org
-DUCKDNS_TOKEN=tu_token_duckdns
+DB_PASSWORD=tu_password_de_gamelist_en_postgres
 ```
 
 > Las credenciales de IGDB se obtienen en [dev.twitch.tv](https://dev.twitch.tv/console/apps) creando una aplicación con `Client Type = Confidential`.
@@ -97,16 +111,14 @@ DUCKDNS_TOKEN=tu_token_duckdns
 docker compose up -d
 ```
 
-Levanta **4 servicios**: base de datos (PostgreSQL), traductor (LibreTranslate), la aplicación web y el reverse proxy (Caddy).
+Levanta **2 servicios**: la aplicación web y el traductor (LibreTranslate). PostgreSQL y Caddy corren como contenedores externos.
 
-La aplicación estará disponible en **https://{tu-dominio-duckdns}:1443** (HTTPS vía Caddy) o directamente en el puerto interno 1080 si accedes sin proxy.
+La aplicación estará disponible en **https://{tu-dominio-duckdns}:1443** (HTTPS vía Caddy) o directamente en el puerto interno 1080.
 
-En el primer arranque ocurre lo siguiente:
+En el primer arranque:
 1. **LibreTranslate** descarga los modelos de idioma (inglés + español) — puede tardar 2-3 minutos.
 2. Una vez listo, el `SyncBackgroundService` sincroniza los juegos desde IGDB.
-3. El `TranslationBackgroundService` traduce las descripciones al español en segundo plano (20 juegos cada 15 segundos) sin bloquear el sync.
-
-> **Nota:** LibreTranslate se autoaloja en el propio Docker Compose — no requiere cuenta ni API key externa.
+3. El `TranslationBackgroundService` traduce las descripciones al español en segundo plano (20 juegos cada 15 segundos).
 
 ### 4. Registrarse
 
@@ -121,10 +133,7 @@ cd src/GameList.Web
 dotnet run
 ```
 
-> Requiere PostgreSQL en `localhost:5432`. Puedes levantarlo solo con:
-> ```bash
-> docker compose up -d db
-> ```
+> Requiere PostgreSQL accesible. Puedes usar el contenedor compartido o uno local.
 
 ### Frontend (Vue + Vite)
 
@@ -134,26 +143,22 @@ npm install
 npm run dev
 ```
 
-El servidor de desarrollo de Vite hace proxy al backend en `http://localhost:5000`.
-
 ### Tests
 
 ```bash
 dotnet test
 ```
 
-Los tests de integración usan **Testcontainers** — levantan un contenedor de PostgreSQL automáticamente, no necesitas nada más. 81 tests en total (51 integración + 30 unitarios).
+Los tests de integración usan **Testcontainers** — levantan un contenedor de PostgreSQL automáticamente. 109 tests en total (44 integración + 65 unitarios).
 
 ## Variables de entorno
 
 | Variable | Descripción | Obligatoria |
 |---|---|---|
-| `IGDB_CLIENT_ID` | Client ID de la app de Twitch | ✅ |
-| `IGDB_CLIENT_SECRET` | Client Secret de la app de Twitch | ✅ |
-| `REGISTRATION_SECRET_CODE` | Código necesario para registrarse | ✅ |
-| `DB_PASSWORD` | Contraseña de PostgreSQL | ⬜ (tiene valor por defecto) |
-| `DUCKDNS_DOMAIN` | Subdominio DuckDNS (e.g. `miapp.duckdns.org`) | ✅ (para HTTPS) |
-| `DUCKDNS_TOKEN` | Token de DuckDNS para validación TLS | ✅ (para HTTPS) |
+| `IGDB_CLIENT_ID` | Client ID de la app de Twitch | Si |
+| `IGDB_CLIENT_SECRET` | Client Secret de la app de Twitch | Si |
+| `REGISTRATION_SECRET_CODE` | Código necesario para registrarse | Si |
+| `DB_PASSWORD` | Contraseña del usuario gamelist en PostgreSQL | Si |
 
 ## Licencia
 
