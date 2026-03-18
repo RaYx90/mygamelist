@@ -33,7 +33,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: "http://+:1080"
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=gamelist;Username=gamelist;Password=${DB_PASSWORD}"
+      ConnectionStrings__DefaultConnection: "${CONNECTION_STRING}"
       Igdb__ClientId: "${IGDB_CLIENT_ID}"
       Igdb__ClientSecret: "${IGDB_CLIENT_SECRET}"
       Registration__SecretCode: "${REGISTRATION_SECRET_CODE}"
