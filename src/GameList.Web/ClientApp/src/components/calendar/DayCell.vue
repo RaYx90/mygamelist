@@ -1,5 +1,11 @@
 <template>
-  <div class="day-cell" :class="releases.length > 0 ? 'has-releases' : 'empty-day'">
+  <div
+    class="day-cell"
+    :class="[
+      releases.length > 0 ? 'has-releases' : 'empty-day',
+      isToday ? 'today' : ''
+    ]"
+  >
     <div class="day-header">
       <span class="day-number">{{ dayNumber }}</span>
       <span class="day-weekday">{{ weekdayName }}</span>
@@ -47,6 +53,12 @@ const weekdayName = computed(() => {
   const [y, m, d] = props.date.split('-').map(Number)
   return WEEKDAYS[new Date(y, m - 1, d).getDay()]
 })
+
+const todayStr = (() => {
+  const t = new Date()
+  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`
+})()
+const isToday = computed(() => props.date === todayStr)
 
 const { getForGame: getGameSocialData } = useGameSocialData(toRef(props, 'gameStatus'))
 </script>

@@ -17,23 +17,31 @@
           <PlatformFilter
             :platforms="platforms"
             :selected-platform-id="selectedPlatformId"
+            :is-active="selectedPlatformId !== null"
             @platform-changed="handlePlatformChanged"
           />
           <CategoryFilter
             :selected-category="selectedCategory"
+            :is-active="selectedCategory !== 0"
             @category-changed="handleCategoryChanged"
           />
-          <div class="search-box">
+          <div
+            class="search-box"
+            :class="{ 'search-box--active': searchTerm }"
+          >
             <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
               <line x1="16.5" y1="16.5" x2="22" y2="22" />
             </svg>
             <input
+              id="search-games"
               class="search-input"
-              type="text"
+              type="search"
+              name="search"
               placeholder="Buscar juegos..."
               :value="searchTerm"
+              aria-label="Buscar juegos"
               @input="onSearchChanged($event.target.value)"
             />
             <button
@@ -44,20 +52,30 @@
               aria-label="Limpiar búsqueda"
             >&#x2715;</button>
           </div>
-        </div>
-      </div>
 
-      <div v-if="isLoading" class="loading-spinner">
-        <div class="spinner-border" role="status">
-          <span class="visually-hidden">Cargando lanzamientos...</span>
+          <button
+            v-if="hasActiveFilters"
+            class="btn-clear-filters"
+            @click="handleClearFilters"
+            title="Limpiar todos los filtros"
+          >&#x2715; Limpiar filtros</button>
         </div>
       </div>
 
       <!-- Vista Mes (calendario) -->
-      <template v-else-if="selectedView === 'calendar'">
-        <div v-if="filteredCalendarDays.length === 0" class="empty-state">
-          <p v-if="searchTerm">No se encontraron juegos que coincidan con "{{ searchTerm }}".</p>
-          <p v-else>No hay lanzamientos para {{ monthName }} {{ currentYear }}.</p>
+      <template v-if="selectedView === 'calendar'">
+        <CalendarSkeleton v-if="isLoading" />
+        <div v-else-if="filteredCalendarDays.length === 0" class="empty-state">
+          <div class="empty-state-icon">🔍</div>
+          <p class="empty-state-text" v-if="searchTerm">
+            No se encontraron juegos que coincidan con "{{ searchTerm }}".
+          </p>
+          <p class="empty-state-text" v-else>
+            No hay lanzamientos para {{ monthName }} {{ currentYear }}.
+          </p>
+          <p v-if="hasActiveFilters" class="empty-state-sub">
+            <button class="btn-clear-filters" @click="handleClearFilters">Quitar filtros</button>
+          </p>
         </div>
         <div v-else class="calendar-grid">
           <div class="week-header-cell" v-for="wd in WEEK_DAYS" :key="wd">{{ wd }}</div>
@@ -113,13 +131,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCalendar } from '../composables/useCalendar.js'
 import { useGameStatus } from '../composables/useGameStatus.js'
 import MonthNavigator from '../components/calendar/MonthNavigator.vue'
 import PlatformFilter from '../components/filters/PlatformFilter.vue'
 import CategoryFilter from '../components/filters/CategoryFilter.vue'
+import CalendarSkeleton from '../components/calendar/CalendarSkeleton.vue'
 import DayCell from '../components/calendar/DayCell.vue'
 import DayView from '../components/calendar/DayView.vue'
 import DayReleasesModal from '../components/calendar/DayReleasesModal.vue'
@@ -133,7 +152,7 @@ const {
   isLoading, platforms, monthName, firstDayColumnStart,
   allDaysInMonth, filteredCalendarDays, calendarDays,
   selectedDay, releasesForDay, loadReleases, loadPlatforms,
-  onMonthChanged, onPlatformChanged, onCategoryChanged, onSearchChanged,
+  onMonthChanged, onPlatformChanged, onCategoryChanged, onSearchChanged, clearFilters,
   goToPrevDay, goToNextDay,
 } = useCalendar()
 
@@ -144,6 +163,10 @@ const selectedGame = ref(null)
 const selectedDayReleases = ref(null)
 const selectedDayDate = ref(null)
 const previousDayDate = ref(null)
+
+const hasActiveFilters = computed(() =>
+  selectedPlatformId.value !== null || selectedCategory.value !== 0 || searchTerm.value !== ''
+)
 
 onMounted(async () => {
   await Promise.all([
@@ -171,6 +194,11 @@ async function handlePlatformChanged(id) {
 
 async function handleCategoryChanged(category) {
   await onCategoryChanged(category)
+}
+
+async function handleClearFilters() {
+  await clearFilters()
+  await loadStatus(calendarDays.value.flatMap(d => d.releases.map(r => r.gameId)))
 }
 
 async function handlePrevDay() {

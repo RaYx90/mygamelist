@@ -353,6 +353,104 @@ a { color: #60a5fa; }
 .empty-state { text-align: center; padding: 4rem; color: #4b5563; font-size: 1rem; }
 
 /* ── Responsive ── */
+/* ── Filter active state ── */
+.filter-select--active {
+  border-color: #6366f1;
+  color: #a5b4fc;
+}
+
+/* ── Clear filters button ── */
+.btn-clear-filters {
+  background: transparent;
+  border: 1px solid #4f46e5;
+  border-radius: 6px;
+  color: #818cf8;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-clear-filters:hover {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+}
+
+/* ── Search box active state ── */
+.search-box--active {
+  border-color: #6366f1;
+}
+
+/* ── Today highlight ── */
+.day-cell.today {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35);
+}
+.day-cell.today .day-number {
+  color: #fff;
+  background: #6366f1;
+  border-radius: 4px;
+  padding: 0 0.3rem;
+}
+
+/* ── Skeleton loading ── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.skeleton-cell {
+  min-height: 140px;
+  border: 1px solid #2d2d4e;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #1a1a2e 25%, #22223a 50%, #1a1a2e 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ── Empty state with icon ── */
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.4;
+}
+.empty-state-text {
+  color: #4b5563;
+  font-size: 1rem;
+  margin: 0;
+}
+.empty-state-sub {
+  color: #374151;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+/* ── Store links in game modal ── */
+.store-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #2d2d4e;
+}
+.store-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  text-decoration: none;
+  background: #12122a;
+  border: 1px solid #3d3d5e;
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  transition: border-color 0.15s, color 0.15s;
+}
+.store-link:hover {
+  border-color: #6366f1;
+  color: #a5b4fc;
+}
+
 @media (max-width: 900px) {
   .calendar-grid { grid-template-columns: repeat(4, 1fr); }
   .week-header-cell { display: none; }
@@ -366,6 +464,7 @@ a { color: #60a5fa; }
   .week-header-cell { display: none; }
   .day-cell { min-height: auto; border-radius: 10px; padding: 0.5rem 0.6rem; }
   .day-cell.empty-day { display: none; }
+  .skeleton-cell { min-height: 80px; }
   .day-header { margin-bottom: 0.3rem; }
   .day-number { font-size: 1rem; }
   .day-weekday { font-size: 0.75rem; }

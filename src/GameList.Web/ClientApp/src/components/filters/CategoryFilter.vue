@@ -1,7 +1,10 @@
 <template>
   <select
+    id="filter-category"
     class="filter-select"
+    :class="{ 'filter-select--active': isActive }"
     :value="selectedCategory ?? ''"
+    aria-label="Filtrar por tipo de juego"
     @change="emit('category-changed', $event.target.value === '' ? null : +$event.target.value)"
   >
     <option value="">Todos los tipos</option>
@@ -11,7 +14,8 @@
 
 <script setup>
 defineProps({
-  selectedCategory: { type: Number, default: null }
+  selectedCategory: { type: Number, default: null },
+  isActive: { type: Boolean, default: false }
 })
 const emit = defineEmits(['category-changed'])
 

@@ -11,7 +11,8 @@
       <div class="spinner-border" role="status" />
     </div>
     <div v-else-if="releases.length === 0" class="empty-state">
-      <p>No hay lanzamientos este día.</p>
+      <div class="empty-state-icon">📅</div>
+      <p class="empty-state-text">No hay lanzamientos este día.</p>
     </div>
     <div v-else class="day-releases-list">
       <ReleaseCard

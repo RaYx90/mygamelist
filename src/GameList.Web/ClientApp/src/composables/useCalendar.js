@@ -90,6 +90,14 @@ export function useCalendar() {
     searchTerm.value = term
   }
 
+  /** Resetea todos los filtros a su valor por defecto y recarga los datos. */
+  async function clearFilters() {
+    selectedPlatformId.value = null
+    selectedCategory.value = 0
+    searchTerm.value = ''
+    await loadReleases()
+  }
+
   // Devuelve true si el mes cambió (el llamante puede recargar el status)
   async function goToPrevDay() {
     const [y, m, d] = selectedDay.value.split('-').map(Number)
@@ -141,6 +149,7 @@ export function useCalendar() {
     onPlatformChanged,
     onCategoryChanged,
     onSearchChanged,
+    clearFilters,
     goToPrevDay,
     goToNextDay,
   }

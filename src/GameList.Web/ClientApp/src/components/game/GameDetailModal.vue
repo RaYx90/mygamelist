@@ -68,6 +68,17 @@
               </span>
             </div>
           </div>
+
+          <div v-if="storeLinks.length > 0" class="store-links">
+            <a
+              v-for="link in storeLinks"
+              :key="link.label"
+              :href="link.url"
+              class="store-link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >{{ link.icon }} {{ link.label }}</a>
+          </div>
         </div>
       </div>
     </div>
@@ -112,6 +123,23 @@ const categoryLabel = computed(() => CATEGORY_LABELS[props.game.gameCategory] ??
 
 const { isLoggedIn } = useAuth()
 const { formatDate } = useFormatDate()
+
+const storeLinks = computed(() => {
+  const links = []
+  const platforms = props.game.allPlatformLabels ?? []
+  const name = encodeURIComponent(props.game.gameName)
+
+  if (platforms.some(p => /\bpc\b|windows/i.test(p))) {
+    links.push({ label: 'Steam', url: `https://store.steampowered.com/search/?term=${name}`, icon: '🖥️' })
+  }
+  if (platforms.some(p => /playstation|ps[45]/i.test(p))) {
+    links.push({ label: 'PS Store', url: `https://store.playstation.com/es-es/search/${name}`, icon: '🎮' })
+  }
+  if (props.game.gameSlug) {
+    links.push({ label: 'IGDB', url: `https://www.igdb.com/games/${props.game.gameSlug}`, icon: '📋' })
+  }
+  return links
+})
 </script>
 
 <style scoped>
@@ -189,9 +217,6 @@ const { formatDate } = useFormatDate()
   border-color: #7878c8;
   color: #fff;
 }
-.purchased-by {
-  width: 100%;
-}
 .social-group-stats {
   display: flex;
   flex-wrap: wrap;
@@ -208,4 +233,3 @@ const { formatDate } = useFormatDate()
 .stat-badge.fav { color: #f97f7f; }
 .stat-badge.purchased { color: #7fd97f; }
 </style>
-
