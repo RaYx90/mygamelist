@@ -21,6 +21,12 @@
       @click="emit('month-changed', selectedMonth + 1)"
       aria-label="Mes siguiente"
     >&#8250;</button>
+    <button
+      v-if="selectedMonth !== currentMonthNumber"
+      class="month-nav-today"
+      @click="emit('month-changed', currentMonthNumber)"
+      aria-label="Ir al mes actual"
+    >Hoy</button>
   </div>
 </template>
 
@@ -32,6 +38,8 @@ defineProps({
   currentYear: { type: Number, required: true }
 })
 const emit = defineEmits(['month-changed'])
+
+const currentMonthNumber = new Date().getMonth() + 1
 </script>
 
 <style scoped>
@@ -68,5 +76,24 @@ const emit = defineEmits(['month-changed'])
 .month-nav-btn:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+}
+
+.month-nav-today {
+  background: rgba(99,102,241,0.12);
+  border: 1px solid #4f46e5;
+  border-radius: 6px;
+  color: #a5b4fc;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0 0.6rem;
+  height: 26px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.month-nav-today:hover {
+  background: rgba(99,102,241,0.25);
+  color: #e0e7ff;
 }
 </style>

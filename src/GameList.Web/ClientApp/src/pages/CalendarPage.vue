@@ -215,11 +215,12 @@ onMounted(async () => {
   ])
 })
 
-watch(() => route.query.month, (val) => {
+watch(() => route.query.month, async (val) => {
   const m = parseInt(val)
   if (m >= 1 && m <= 12 && m !== selectedMonth.value) {
     selectedMonth.value = m
-    loadReleases()
+    await loadReleases()
+    await loadStatus(calendarDays.value.flatMap(d => d.releases.map(r => r.gameId)))
   }
 })
 
