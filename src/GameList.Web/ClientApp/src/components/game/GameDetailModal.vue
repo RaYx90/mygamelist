@@ -135,6 +135,12 @@ const storeLinks = computed(() => {
   if (platforms.some(p => /playstation|ps[45]/i.test(p))) {
     links.push({ label: 'PS Store', url: `https://store.playstation.com/es-es/search/${name}`, icon: '🎮' })
   }
+  if (platforms.some(p => /switch/i.test(p))) {
+    links.push({ label: 'Nintendo', url: `https://www.nintendo.com/search/#q=${name}&p=1&cat=gme&sort=df`, icon: '🔴' })
+  }
+  if (platforms.some(p => /xbox|series x|series s/i.test(p))) {
+    links.push({ label: 'Xbox', url: `https://www.xbox.com/es-ES/Search/Results?q=${name}`, icon: '🟢' })
+  }
   if (props.game.gameSlug) {
     links.push({ label: 'IGDB', url: `https://www.igdb.com/games/${props.game.gameSlug}`, icon: '📋' })
   }
