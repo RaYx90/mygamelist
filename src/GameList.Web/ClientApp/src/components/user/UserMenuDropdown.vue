@@ -123,7 +123,17 @@
             <li v-for="game in panelItems" :key="game.gameId" class="panel-item">
               <img v-if="game.coverImageUrl" :src="game.coverImageUrl" :alt="game.gameName" class="panel-thumb" />
               <span v-else class="panel-thumb-ph">🎮</span>
-              <span class="panel-game-name">{{ game.gameName }}</span>
+              <div class="panel-game-info">
+                <span class="panel-game-name">{{ game.gameName }}</span>
+                <button
+                  v-if="game.releaseDate"
+                  class="panel-game-date"
+                  @click="goToReleaseMonth(game.releaseDate)"
+                  :title="`Ir al mes de lanzamiento`"
+                >
+                  📅 {{ formatReleaseDate(game.releaseDate) }} →
+                </button>
+              </div>
               <button class="panel-item-remove" @click="removeFromPanel(game.gameId)" title="Quitar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
@@ -137,13 +147,27 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '../../composables/useAuth.js'
 import { changeUsername } from '../../api/authApi.js'
 import { getMyFavorites, getMyPurchases, removeFavorite, unmarkPurchased } from '../../api/socialApi.js'
 
 const router = useRouter()
+const route = useRoute()
 const { username, isLoggedIn, logout, updateUsername } = useAuth()
+
+function goToReleaseMonth(releaseDate) {
+  if (!releaseDate) return
+  const month = parseInt(String(releaseDate).split('-')[1])
+  closePanel()
+  router.push({ path: '/', query: { ...route.query, month } })
+}
+
+function formatReleaseDate(releaseDate) {
+  if (!releaseDate) return null
+  const d = new Date(String(releaseDate) + 'T00:00:00')
+  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+}
 
 // ── Estado del dropdown ────────────────────────────────────────────────────
 const open = ref(false)
@@ -543,7 +567,7 @@ async function handleLogout() {
 }
 .panel-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.65rem;
   padding: 0.5rem 0.5rem;
   border-radius: 8px;
@@ -568,11 +592,36 @@ async function handleLogout() {
   font-size: 0.9rem;
   flex-shrink: 0;
 }
+.panel-game-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-top: 2px;
+}
 .panel-game-name {
   font-size: 0.85rem;
   color: #e2e8f0;
   line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+.panel-game-date {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6366f1;
+  font-size: 0.72rem;
+  padding: 0;
+  text-align: left;
+  transition: color 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.panel-game-date:hover { color: #a5b4fc; }
 .panel-item-remove {
   margin-left: auto;
   flex-shrink: 0;
