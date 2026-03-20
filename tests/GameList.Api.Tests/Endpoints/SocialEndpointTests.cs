@@ -104,7 +104,7 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
         await client.SendAsync(Req(HttpMethod.Post, $"/api/social/favorites/{gameId}"));
         await client.SendAsync(Req(HttpMethod.Post, $"/api/social/purchases/{gameId}"));
 
-        var response = await client.SendAsync(Req(HttpMethod.Get, $"/api/social/status?gameIds={gameId}"));
+        var response = await client.SendAsync(Req(HttpMethod.Post, "/api/social/status", new { gameIds = new[] { gameId } }));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -118,7 +118,7 @@ public sealed class SocialEndpointTests : IClassFixture<CustomWebApplicationFact
     [Fact]
     public async Task GetStatus_SinFavoritosNiCompras_DevuelveListasVacias()
     {
-        var response = await client.SendAsync(Req(HttpMethod.Get, $"/api/social/status?gameIds={gameId}"));
+        var response = await client.SendAsync(Req(HttpMethod.Post, "/api/social/status", new { gameIds = new[] { gameId } }));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();

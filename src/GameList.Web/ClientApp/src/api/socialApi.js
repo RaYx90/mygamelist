@@ -6,9 +6,7 @@ const client = createHttpClient('/api/social')
 
 /** Obtiene el estado (favoritos/compras) del usuario para los gameIds indicados. */
 export function getStatus(gameIds = []) {
-  // Los IDs se envían como CSV en el query param: ?gameIds=1,2,3
-  const q = gameIds.length ? `?gameIds=${gameIds.join(',')}` : ''
-  return client.get(`/status${q}`)
+  return client.postJson('/status', { gameIds })
 }
 
 /** Añade el juego a favoritos del usuario. */

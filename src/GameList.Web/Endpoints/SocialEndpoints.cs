@@ -17,7 +17,7 @@ namespace GameList.Web.Endpoints;
 /// DELETE /api/social/favorites/{gameId}   — Elimina un juego de favoritos
 /// POST   /api/social/purchases/{gameId}   — Marca un juego como comprado
 /// DELETE /api/social/purchases/{gameId}   — Desmarca un juego como comprado
-/// GET    /api/social/status?gameIds=1,2,3 — Estado de favoritos/compras del usuario para los juegos indicados
+/// POST   /api/social/status               — Estado de favoritos/compras del usuario para los juegos indicados (body: { gameIds: [1,2,3] })
 /// GET    /api/social/group                — Insights del grupo (juegos deseados/comprados por los miembros)
 /// GET    /api/social/group/info           — Información básica del grupo del usuario (nombre, miembros, código)
 /// GET    /api/social/group/members        — Listas de favoritos y compras por miembro del grupo
@@ -34,7 +34,7 @@ public static class SocialEndpoints
         api.MapDelete("/favorites/{gameId:int}", RemoveFavorite);
         api.MapPost("/purchases/{gameId:int}", MarkPurchased);
         api.MapDelete("/purchases/{gameId:int}", UnmarkPurchased);
-        api.MapGet("/status", GetStatus);
+        api.MapPost("/status", GetStatus);
         api.MapGet("/group", GetGroupInsights);
         api.MapGet("/group/info", GetMyGroup);
         api.MapGet("/group/members", GetGroupMembersGames);
@@ -62,15 +62,11 @@ public static class SocialEndpoints
     private static async Task<Ok<object>> UnmarkPurchased(ISender sender, int gameId, ClaimsPrincipal user, CancellationToken ct)
     { await sender.Send(new UnmarkPurchasedCommand(GetUserId(user), gameId), ct); return TypedResults.Ok((object)"ok"); }
 
-    private static async Task<Ok<object>> GetStatus(ISender sender, ClaimsPrincipal user, string? gameIds, CancellationToken ct)
+    private record StatusRequest(List<int>? GameIds);
+
+    private static async Task<Ok<object>> GetStatus(ISender sender, ClaimsPrincipal user, StatusRequest body, CancellationToken ct)
     {
-        // gameIds llega como string CSV "1,2,3" desde el query param. Se parsea con TryParse
-        // para ignorar valores no numéricos sin lanzar excepción.
-        var ids = gameIds?.Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Select(s => int.TryParse(s.Trim(), out var id) ? id : (int?)null)
-            .Where(id => id.HasValue)
-            .Select(id => id!.Value)
-            .ToList() ?? [];
+        var ids = body.GameIds ?? [];
         var result = await sender.Send(new GetUserGameStatusQuery(GetUserId(user), ids), ct);
         return TypedResults.Ok((object)result);
     }
