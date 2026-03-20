@@ -16,7 +16,7 @@ services:
       timeout: 10s
       retries: 20
       start_period: 180s
-    restart: unless-stopped
+    restart: always
 
   web:
     build:
@@ -47,7 +47,7 @@ services:
       - default
       - postgres
       - caddy
-    restart: unless-stopped
+    restart: always
 
 volumes:
   dataprotection_keys:
