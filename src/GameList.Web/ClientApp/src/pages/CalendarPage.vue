@@ -73,15 +73,7 @@
           <p class="empty-state-text" v-else>
             No hay lanzamientos para {{ monthName }} {{ currentYear }}.
           </p>
-          <p v-if="hasActiveFilters" class="empty-state-sub">
-            <button class="btn-clear-filters" @click="handleClearFilters">Quitar filtros</button>
-          </p>
-          <!-- Búsqueda cross-month -->
-          <div v-if="searchTerm && crossMonthResults.length === 0 && !crossMonthLoading" class="cross-month-hint">
-            <button class="btn-search-year" @click="searchAcrossYear">
-              🔎 Buscar "{{ searchTerm }}" en todo {{ currentYear }}
-            </button>
-          </div>
+          <!-- Búsqueda cross-month (auto-disparada) -->
           <div v-if="crossMonthLoading" class="cross-month-hint">
             <span class="cross-month-loading">Buscando en todo {{ currentYear }}...</span>
           </div>
@@ -105,6 +97,9 @@
               </button>
             </div>
           </div>
+          <p v-if="hasActiveFilters" class="empty-state-sub">
+            <button class="btn-clear-filters" @click="handleClearFilters">Quitar filtros</button>
+          </p>
         </div>
         <div v-else class="calendar-grid">
           <div class="week-header-cell" v-for="wd in WEEK_DAYS" :key="wd">{{ wd }}</div>
@@ -215,6 +210,13 @@ onMounted(async () => {
   ])
 })
 
+// Auto-dispara búsqueda cross-month cuando no hay resultados locales y hay término de búsqueda
+watch([filteredCalendarDays, isLoading], ([days, loading]) => {
+  if (!loading && days.length === 0 && searchTerm.value.length >= 2 && crossMonthResults.value.length === 0 && !crossMonthLoading.value) {
+    searchAcrossYear()
+  }
+})
+
 watch(() => route.query.month, async (val) => {
   const m = parseInt(val)
   if (m >= 1 && m <= 12 && m !== selectedMonth.value) {
@@ -296,17 +298,6 @@ function closeDayReleases() {
 .cross-month-hint {
   margin-top: 1rem;
 }
-.btn-search-year {
-  background: rgba(99,102,241,0.12);
-  border: 1px solid #4f46e5;
-  border-radius: 8px;
-  color: #a5b4fc;
-  font-size: 0.85rem;
-  padding: 0.45rem 1rem;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-search-year:hover { background: rgba(99,102,241,0.22); }
 .cross-month-loading { color: #6366f1; font-size: 0.85rem; }
 .cross-month-results {
   margin-top: 1.25rem;
