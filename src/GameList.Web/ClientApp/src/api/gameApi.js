@@ -13,3 +13,7 @@ export function getPlatforms() {
 export function getGameDetail(id) {
   return client.get(`/games/${id}`)
 }
+
+export function searchReleases(year, q) {
+  return client.getWithParams('/releases/search', { year, q })
+}

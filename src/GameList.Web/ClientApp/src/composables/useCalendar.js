@@ -4,7 +4,7 @@
  */
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getReleases, getPlatforms } from '../api/gameApi.js'
+import { getReleases, getPlatforms, searchReleases } from '../api/gameApi.js'
 
 const MONTH_NAMES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -28,6 +28,8 @@ export function useCalendar() {
   const calendarDays = ref([])
   const platforms = ref([])
   const selectedDay = ref(toDateStr(new Date()))
+  const crossMonthResults = ref([])
+  const crossMonthLoading = ref(false)
 
   const monthName = computed(() => MONTH_NAMES[selectedMonth.value - 1])
 
@@ -88,6 +90,19 @@ export function useCalendar() {
 
   function onSearchChanged(term) {
     searchTerm.value = term
+    crossMonthResults.value = []
+  }
+
+  async function searchAcrossYear() {
+    if (!searchTerm.value || searchTerm.value.length < 2) return
+    crossMonthLoading.value = true
+    try {
+      crossMonthResults.value = await searchReleases(currentYear, searchTerm.value)
+    } catch {
+      crossMonthResults.value = []
+    } finally {
+      crossMonthLoading.value = false
+    }
   }
 
   /** Resetea todos los filtros a su valor por defecto y recarga los datos. */
@@ -95,6 +110,7 @@ export function useCalendar() {
     selectedPlatformId.value = null
     selectedCategory.value = 0
     searchTerm.value = ''
+    crossMonthResults.value = []
     await loadReleases()
   }
 
@@ -142,6 +158,8 @@ export function useCalendar() {
     allDaysInMonth,
     filteredCalendarDays,
     selectedDay,
+    crossMonthResults,
+    crossMonthLoading,
     releasesForDay,
     loadReleases,
     loadPlatforms,
@@ -149,6 +167,7 @@ export function useCalendar() {
     onPlatformChanged,
     onCategoryChanged,
     onSearchChanged,
+    searchAcrossYear,
     clearFilters,
     goToPrevDay,
     goToNextDay,

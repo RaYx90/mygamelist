@@ -53,13 +53,21 @@ public sealed class GetGroupMembersGamesHandler : IRequestHandler<GetGroupMember
                     ? favs
                         // Protección por si la propiedad de navegación Game no fue cargada.
                         .Where(f => f.Game is not null)
-                        .Select(f => new GameSummaryDto(f.GameId, f.Game!.Name, f.Game.CoverImageUrl))
+                        .Select(f => new GameSummaryDto(
+                            f.GameId,
+                            f.Game!.Name,
+                            f.Game.CoverImageUrl,
+                            f.Game.Releases.Any() ? f.Game.Releases.Min(r => r.ReleaseDate) : (DateOnly?)null))
                         .ToList()
                     : [],
                 Purchases: purchasesByUser.TryGetValue(m.Id, out var purcs)
                     ? purcs
                         .Where(p => p.Game is not null)
-                        .Select(p => new GameSummaryDto(p.GameId, p.Game!.Name, p.Game.CoverImageUrl))
+                        .Select(p => new GameSummaryDto(
+                            p.GameId,
+                            p.Game!.Name,
+                            p.Game.CoverImageUrl,
+                            p.Game.Releases.Any() ? p.Game.Releases.Min(r => r.ReleaseDate) : (DateOnly?)null))
                         .ToList()
                     : []
             ))

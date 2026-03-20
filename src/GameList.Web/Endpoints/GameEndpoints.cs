@@ -26,6 +26,9 @@ public static class GameEndpoints
         api.MapGet("/releases", GetReleasesByMonth)
             .WithName("GetReleasesByMonth");
 
+        api.MapGet("/releases/search", SearchReleases)
+            .WithName("SearchReleases");
+
         api.MapGet("/platforms", GetPlatforms)
             .WithName("GetPlatforms");
 
@@ -77,5 +80,16 @@ public static class GameEndpoints
         {
             return TypedResults.NotFound(ex.Message);
         }
+    }
+
+    private static async Task<Ok<object>> SearchReleases(
+        ISender sender,
+        int? year,
+        string? q,
+        CancellationToken cancellationToken)
+    {
+        var searchYear = year ?? DateTime.UtcNow.Year;
+        var result = await sender.Send(new SearchReleasesQuery(searchYear, q ?? string.Empty), cancellationToken);
+        return TypedResults.Ok((object)result);
     }
 }

@@ -44,7 +44,8 @@ const { getForGame: getGameSocialData } = useGameSocialData(toRef(props, 'gameSt
 
 const formattedDate = computed(() => {
   const d = new Date(props.date + 'T00:00:00')
-  return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+  const str = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+  return str.charAt(0).toUpperCase() + str.slice(1)
 })
 </script>
 
@@ -81,7 +82,7 @@ const formattedDate = computed(() => {
   font-size: 1rem;
   font-weight: 600;
   color: #fff;
-  text-transform: capitalize;
+  text-transform: none;
 }
 
 .day-releases-list {

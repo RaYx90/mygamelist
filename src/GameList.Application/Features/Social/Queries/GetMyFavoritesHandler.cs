@@ -19,7 +19,11 @@ public sealed class GetMyFavoritesHandler : IRequestHandler<GetMyFavoritesQuery,
         return favorites
             .Where(f => f.Game is not null)
             .OrderBy(f => f.Game!.Name)
-            .Select(f => new GameSummaryDto(f.GameId, f.Game!.Name, f.Game.CoverImageUrl))
+            .Select(f => new GameSummaryDto(
+                f.GameId,
+                f.Game!.Name,
+                f.Game.CoverImageUrl,
+                f.Game.Releases.Any() ? f.Game.Releases.Min(r => r.ReleaseDate) : (DateOnly?)null))
             .ToList()
             .AsReadOnly();
     }

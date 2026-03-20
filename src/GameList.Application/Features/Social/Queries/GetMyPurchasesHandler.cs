@@ -18,7 +18,11 @@ public sealed class GetMyPurchasesHandler : IRequestHandler<GetMyPurchasesQuery,
         return purchases
             .Where(p => p.Game is not null)
             .OrderBy(p => p.Game!.Name)
-            .Select(p => new GameSummaryDto(p.GameId, p.Game!.Name, p.Game.CoverImageUrl))
+            .Select(p => new GameSummaryDto(
+                p.GameId,
+                p.Game!.Name,
+                p.Game.CoverImageUrl,
+                p.Game.Releases.Any() ? p.Game.Releases.Min(r => r.ReleaseDate) : (DateOnly?)null))
             .ToList()
             .AsReadOnly();
     }

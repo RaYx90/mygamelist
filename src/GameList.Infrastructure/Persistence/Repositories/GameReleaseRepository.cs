@@ -101,6 +101,29 @@ internal sealed class GameReleaseRepository : IGameReleaseRepository
             .ExecuteDeleteAsync(cancellationToken);
 
     /// <summary>
+    /// Busca lanzamientos por nombre de juego en un año completo.
+    /// </summary>
+    /// <param name="year">Año en el que buscar.</param>
+    /// <param name="name">Texto parcial del nombre del juego.</param>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    /// <returns>Lista de lanzamientos ordenados por fecha y nombre.</returns>
+    public async Task<IReadOnlyList<GameReleaseEntity>> SearchByNameAsync(
+        int year,
+        string name,
+        CancellationToken cancellationToken = default)
+    {
+        var nameLower = name.ToLowerInvariant();
+        return await context.GameReleases
+            .AsNoTracking()
+            .Include(r => r.Game)
+            .Include(r => r.Platform)
+            .Where(r => r.ReleaseDate.Year == year && r.Game!.Name.ToLower().Contains(nameLower))
+            .OrderBy(r => r.ReleaseDate)
+            .ThenBy(r => r.Game!.Name)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
     /// Persiste los cambios pendientes en la base de datos.
     /// </summary>
     /// <param name="cancellationToken">Token de cancelación.</param>

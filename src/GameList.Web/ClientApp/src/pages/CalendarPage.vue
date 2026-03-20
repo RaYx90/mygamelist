@@ -68,7 +68,7 @@
         <div v-else-if="filteredCalendarDays.length === 0" class="empty-state">
           <div class="empty-state-icon">🔍</div>
           <p class="empty-state-text" v-if="searchTerm">
-            No se encontraron juegos que coincidan con "{{ searchTerm }}".
+            No se encontraron juegos que coincidan con "{{ searchTerm }}" en {{ monthName }}.
           </p>
           <p class="empty-state-text" v-else>
             No hay lanzamientos para {{ monthName }} {{ currentYear }}.
@@ -76,6 +76,35 @@
           <p v-if="hasActiveFilters" class="empty-state-sub">
             <button class="btn-clear-filters" @click="handleClearFilters">Quitar filtros</button>
           </p>
+          <!-- Búsqueda cross-month -->
+          <div v-if="searchTerm && crossMonthResults.length === 0 && !crossMonthLoading" class="cross-month-hint">
+            <button class="btn-search-year" @click="searchAcrossYear">
+              🔎 Buscar "{{ searchTerm }}" en todo {{ currentYear }}
+            </button>
+          </div>
+          <div v-if="crossMonthLoading" class="cross-month-hint">
+            <span class="cross-month-loading">Buscando en todo {{ currentYear }}...</span>
+          </div>
+          <div v-if="crossMonthResults.length > 0" class="cross-month-results">
+            <p class="cross-month-title">Encontrado en otros meses:</p>
+            <div
+              v-for="day in crossMonthResults"
+              :key="day.date"
+              class="cross-month-item"
+            >
+              <button
+                class="cross-month-go"
+                @click="goToMonth(day.date)"
+                :title="`Ir a ${formatCrossMonthDate(day.date)}`"
+              >
+                📅 {{ formatCrossMonthDate(day.date) }}
+                <span class="cross-month-games">
+                  {{ day.releases.map(r => r.gameName).join(', ') }}
+                </span>
+                <span class="cross-month-arrow">→</span>
+              </button>
+            </div>
+          </div>
         </div>
         <div v-else class="calendar-grid">
           <div class="week-header-cell" v-for="wd in WEEK_DAYS" :key="wd">{{ wd }}</div>
@@ -131,7 +160,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCalendar } from '../composables/useCalendar.js'
 import { useGameStatus } from '../composables/useGameStatus.js'
@@ -151,14 +180,25 @@ const {
   currentYear, selectedMonth, selectedPlatformId, selectedCategory, searchTerm,
   isLoading, platforms, monthName, firstDayColumnStart,
   allDaysInMonth, filteredCalendarDays, calendarDays,
-  selectedDay, releasesForDay, loadReleases, loadPlatforms,
-  onMonthChanged, onPlatformChanged, onCategoryChanged, onSearchChanged, clearFilters,
+  selectedDay, crossMonthResults, crossMonthLoading,
+  releasesForDay, loadReleases, loadPlatforms,
+  onMonthChanged, onPlatformChanged, onCategoryChanged, onSearchChanged, searchAcrossYear, clearFilters,
   goToPrevDay, goToNextDay,
 } = useCalendar()
 
 const { gameStatus, loadStatus, toggleFavorite, togglePurchase } = useGameStatus()
 
 const selectedView = ref(window.innerWidth < 640 ? 'day' : 'calendar')
+
+// Sincroniza el día seleccionado con el mes visible al cambiar a vista Día
+watch(selectedView, (newView) => {
+  if (newView === 'day') {
+    const [, m] = selectedDay.value.split('-').map(Number)
+    if (m !== selectedMonth.value) {
+      selectedDay.value = `${currentYear}-${String(selectedMonth.value).padStart(2, '0')}-01`
+    }
+  }
+})
 const selectedGame = ref(null)
 const selectedDayReleases = ref(null)
 const selectedDayDate = ref(null)
@@ -211,6 +251,16 @@ async function handleNextDay() {
   if (monthChanged) await loadStatus(calendarDays.value.flatMap(d => d.releases.map(r => r.gameId)))
 }
 
+function goToMonth(dateStr) {
+  const month = parseInt(dateStr.split('-')[1])
+  handleMonthChanged(month)
+}
+
+function formatCrossMonthDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })
+}
+
 function openGameDetail(release) {
   previousDayDate.value = selectedDayDate.value
   closeDayReleases()
@@ -242,6 +292,59 @@ function closeDayReleases() {
 </script>
 
 <style scoped>
+.cross-month-hint {
+  margin-top: 1rem;
+}
+.btn-search-year {
+  background: rgba(99,102,241,0.12);
+  border: 1px solid #4f46e5;
+  border-radius: 8px;
+  color: #a5b4fc;
+  font-size: 0.85rem;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-search-year:hover { background: rgba(99,102,241,0.22); }
+.cross-month-loading { color: #6366f1; font-size: 0.85rem; }
+.cross-month-results {
+  margin-top: 1.25rem;
+  max-width: 480px;
+  width: 100%;
+}
+.cross-month-title {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.cross-month-item { margin-bottom: 0.35rem; }
+.cross-month-go {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: #1e1e35;
+  border: 1px solid #3d3d5e;
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-size: 0.82rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cross-month-go:hover { border-color: #6366f1; background: #23233f; }
+.cross-month-games {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #94a3b8;
+}
+.cross-month-arrow { color: #6366f1; font-weight: 700; flex-shrink: 0; }
+
 .view-toggle {
   display: flex;
   gap: 2px;

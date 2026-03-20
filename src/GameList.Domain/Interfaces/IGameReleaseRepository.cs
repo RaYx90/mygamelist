@@ -59,6 +59,18 @@ public interface IGameReleaseRepository
     Task DeleteByGameIdAsync(int gameId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Busca lanzamientos por nombre de juego en un año completo.
+    /// </summary>
+    /// <param name="year">Año en el que buscar.</param>
+    /// <param name="name">Texto parcial del nombre del juego.</param>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    /// <returns>Lista de lanzamientos que coinciden con el nombre en el año indicado.</returns>
+    Task<IReadOnlyList<GameReleaseEntity>> SearchByNameAsync(
+        int year,
+        string name,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Persiste todos los cambios pendientes en la base de datos.
     /// </summary>
     /// <param name="cancellationToken">Token de cancelación.</param>
