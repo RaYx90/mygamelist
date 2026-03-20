@@ -300,9 +300,10 @@ function closeDayReleases() {
 }
 .cross-month-loading { color: #6366f1; font-size: 0.85rem; }
 .cross-month-results {
-  margin-top: 1.25rem;
+  margin: 1.25rem auto 0;
   max-width: 480px;
   width: 100%;
+  text-align: left;
 }
 .cross-month-title {
   font-size: 0.78rem;
