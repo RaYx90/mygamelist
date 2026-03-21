@@ -74,7 +74,10 @@ export function useCalendar() {
   async function onMonthChanged(month) {
     selectedMonth.value = month
     router.replace({ query: { ...route.query, month } })
-    selectedDay.value = `${currentYear}-${String(month).padStart(2, '0')}-01`
+    const now = new Date()
+    const isCurrentMonth = month === now.getMonth() + 1 && currentYear === now.getFullYear()
+    const day = isCurrentMonth ? now.getDate() : 1
+    selectedDay.value = `${currentYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     await loadReleases()
   }
 

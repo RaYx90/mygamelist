@@ -22,16 +22,19 @@
         v-if="releases.length > visibleCount"
         class="more-releases"
         role="button"
+        tabindex="0"
         @click="emit('show-more', date)"
+        @keydown.enter="emit('show-more', date)"
       >+{{ releases.length - visibleCount }} más</div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, onMounted, onBeforeUnmount, toRef } from 'vue'
+import { computed, toRef } from 'vue'
 import ReleaseCard from '../game/ReleaseCard.vue'
 import { useGameSocialData } from '../../composables/useGameSocialData.js'
+import { useIsMobile } from '../../composables/useIsMobile.js'
 
 const props = defineProps({
   date: { type: String, required: true },
@@ -40,10 +43,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['game-selected', 'show-more'])
 
-const isMobile = ref(window.innerWidth <= 600)
-function onResize() { isMobile.value = window.innerWidth <= 600 }
-onMounted(() => window.addEventListener('resize', onResize))
-onBeforeUnmount(() => window.removeEventListener('resize', onResize))
+const isMobile = useIsMobile()
 
 const visibleCount = computed(() => isMobile.value ? 5 : 3)
 const dayNumber = computed(() => parseInt(props.date.split('-')[2]))

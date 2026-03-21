@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import { computed, toRef } from 'vue'
+import { computed, toRef, onMounted, onBeforeUnmount } from 'vue'
 import ReleaseCard from '../game/ReleaseCard.vue'
 import { useGameSocialData } from '../../composables/useGameSocialData.js'
 
@@ -27,6 +27,10 @@ const props = defineProps({
   gameStatus: { type: Object, default: null }
 })
 const emit = defineEmits(['close', 'game-selected'])
+
+function onEscape(e) { if (e.key === 'Escape') emit('close') }
+onMounted(() => document.addEventListener('keydown', onEscape))
+onBeforeUnmount(() => document.removeEventListener('keydown', onEscape))
 
 const formattedDate = computed(() => {
   const d = new Date(props.date + 'T00:00:00')

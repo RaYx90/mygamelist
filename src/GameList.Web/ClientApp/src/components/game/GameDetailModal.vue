@@ -86,7 +86,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAuth } from '../../composables/useAuth.js'
 import { useFormatDate } from '../../composables/useFormatDate.js'
 
@@ -118,6 +118,10 @@ const props = defineProps({
   canGoBack: { type: Boolean, default: false }
 })
 const emit = defineEmits(['close', 'toggle-favorite', 'toggle-purchase', 'go-back'])
+
+function onEscape(e) { if (e.key === 'Escape') emit('close') }
+onMounted(() => document.addEventListener('keydown', onEscape))
+onBeforeUnmount(() => document.removeEventListener('keydown', onEscape))
 
 const categoryLabel = computed(() => CATEGORY_LABELS[props.game.gameCategory] ?? CATEGORY_LABELS[99])
 

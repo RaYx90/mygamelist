@@ -155,10 +155,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCalendar } from '../composables/useCalendar.js'
 import { useGameStatus } from '../composables/useGameStatus.js'
+import { useIsMobile } from '../composables/useIsMobile.js'
 import MonthNavigator from '../components/calendar/MonthNavigator.vue'
 import PlatformFilter from '../components/filters/PlatformFilter.vue'
 import CategoryFilter from '../components/filters/CategoryFilter.vue'
@@ -183,14 +184,18 @@ const {
 
 const { gameStatus, loadStatus, toggleFavorite, togglePurchase } = useGameStatus()
 
-const selectedView = ref(window.innerWidth < 640 ? 'day' : 'calendar')
+const isMobile = useIsMobile()
+const selectedView = ref(isMobile.value ? 'day' : 'calendar')
 
 // Sincroniza el día seleccionado con el mes visible al cambiar a vista Día
 watch(selectedView, (newView) => {
   if (newView === 'day') {
     const [, m] = selectedDay.value.split('-').map(Number)
     if (m !== selectedMonth.value) {
-      selectedDay.value = `${currentYear}-${String(selectedMonth.value).padStart(2, '0')}-01`
+      const now = new Date()
+      const isCurrentMonth = selectedMonth.value === now.getMonth() + 1 && currentYear === now.getFullYear()
+      const day = isCurrentMonth ? now.getDate() : 1
+      selectedDay.value = `${currentYear}-${String(selectedMonth.value).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     }
   }
 })
