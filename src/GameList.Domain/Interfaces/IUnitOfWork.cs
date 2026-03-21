@@ -1,24 +1,15 @@
 namespace GameList.Domain.Interfaces;
 
 /// <summary>
-/// Abstracción para manejar transacciones de base de datos de forma explícita.
-/// Permite agrupar múltiples operaciones en una única transacción atómica,
-/// evitando estados intermedios visibles para los usuarios.
+/// Abstracción para ejecutar operaciones dentro de una transacción atómica.
+/// Compatible con estrategias de retry (ej: NpgsqlRetryingExecutionStrategy).
 /// </summary>
 public interface IUnitOfWork
 {
     /// <summary>
-    /// Inicia una transacción explícita.
+    /// Ejecuta la operación dada dentro de una transacción atómica.
+    /// Si la estrategia de ejecución tiene retry habilitado, toda la operación
+    /// (incluida la transacción) se reintenta como una unidad.
     /// </summary>
-    Task BeginTransactionAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Confirma la transacción actual, haciendo permanentes todos los cambios.
-    /// </summary>
-    Task CommitTransactionAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Revierte la transacción actual, descartando todos los cambios.
-    /// </summary>
-    Task RollbackTransactionAsync(CancellationToken cancellationToken = default);
+    Task ExecuteInTransactionAsync(Func<CancellationToken, Task> operation, CancellationToken cancellationToken = default);
 }

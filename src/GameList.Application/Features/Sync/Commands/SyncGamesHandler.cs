@@ -9,14 +9,13 @@ namespace GameList.Application.Features.Sync.Commands;
 
 /// <summary>
 /// Sincroniza los juegos desde IGDB para el año indicado.
-/// El proceso tiene 3 fases secuenciales: plataformas → juegos → lanzamientos.
-/// Toda la operación se ejecuta dentro de una transacción atómica para evitar
+/// Toda la operación de BD se ejecuta dentro de una transacción atómica para evitar
 /// que los usuarios vean estados intermedios (ej: releases borrados sin reinsertar).
 /// </summary>
 /// <remarks>
 /// Fase 1 — Upsert de plataformas:
 ///   Se crean o actualizan las plataformas encontradas en los datos de IGDB.
-///   Se usa un diccionario (platformCache) para evitar consultas repetidas a la BD por plataforma.
+///   Se usa un diccionario (platformCache) para evitar consultas repetidas a la BD.
 ///
 /// Fase 2 — Upsert de juegos:
 ///   Se crean o actualizan los juegos. La traducción al español NO ocurre aquí;
@@ -64,20 +63,22 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
             var releaseData = await dataProvider.GetReleasesForYearAsync(
                 request.Year, cancellationToken);
 
+            // Variables para capturar contadores dentro de la lambda de transacción.
+            var platformCount = 0;
+            var gameCount = 0;
+
             // Transacción atómica: los usuarios nunca ven un estado intermedio.
             // Sin esto, durante el borrado+reinserción de releases (~1-2 min),
             // la web mostraría días sin juegos.
-            await unitOfWork.BeginTransactionAsync(cancellationToken);
-
-            try
+            // Se usa ExecuteInTransactionAsync para compatibilidad con NpgsqlRetryingExecutionStrategy.
+            await unitOfWork.ExecuteInTransactionAsync(async ct =>
             {
                 // FASE 1 — Upsert de plataformas
-                // Cache en memoria para evitar consultas repetidas durante la misma ejecución del sync.
                 var platformCache = new Dictionary<long, PlatformEntity>();
                 foreach (var data in releaseData.DistinctBy(d => d.IgdbPlatformId))
                 {
                     var existing = await platformRepository.GetByIgdbIdAsync(
-                        data.IgdbPlatformId, cancellationToken);
+                        data.IgdbPlatformId, ct);
 
                     if (existing is null)
                     {
@@ -86,7 +87,7 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
                             data.PlatformSlug,
                             data.IgdbPlatformId,
                             data.PlatformAbbreviation);
-                        await platformRepository.AddAsync(existing, cancellationToken);
+                        await platformRepository.AddAsync(existing, ct);
                     }
                     else
                     {
@@ -97,15 +98,14 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
                     platformCache[data.IgdbPlatformId] = existing;
                 }
 
-                await platformRepository.SaveChangesAsync(cancellationToken);
+                await platformRepository.SaveChangesAsync(ct);
 
                 // FASE 2 — Upsert de juegos
-                // Cache en memoria para resolver IgdbGameId → GameEntity.Id al insertar releases.
                 var gameCache = new Dictionary<long, GameEntity>();
                 foreach (var data in releaseData.DistinctBy(d => d.IgdbGameId))
                 {
                     var existing = await gameRepository.GetByIgdbIdAsync(
-                        data.IgdbGameId, cancellationToken);
+                        data.IgdbGameId, ct);
 
                     if (existing is null)
                     {
@@ -117,7 +117,7 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
                             data.CoverImageUrl,
                             data.GameCategory,
                             data.IsIndie);
-                        await gameRepository.AddAsync(existing, cancellationToken);
+                        await gameRepository.AddAsync(existing, ct);
                     }
                     else
                     {
@@ -128,17 +128,13 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
                     gameCache[data.IgdbGameId] = existing;
                 }
 
-                await gameRepository.SaveChangesAsync(cancellationToken);
+                await gameRepository.SaveChangesAsync(ct);
 
                 // FASE 3 — Reconstrucción de releases (borrar + reinsertar)
-                // Se borran todos los releases de los juegos procesados y se reinsertan desde cero.
-                // Esto es más simple que calcular el diff y cubre el caso de cambios en IGDB
-                // (plataformas añadidas o eliminadas, fechas corregidas, etc.).
                 var processedGameIds = gameCache.Values.Select(g => g.Id).ToList();
                 foreach (var gameId in processedGameIds)
-                    await releaseRepository.DeleteByGameIdAsync(gameId, cancellationToken);
+                    await releaseRepository.DeleteByGameIdAsync(gameId, ct);
 
-                // Se agrupa por juego para determinar si es exclusivo (1 plataforma) o multiplataforma (>1).
                 var releasesByGame = releaseData.GroupBy(d => d.IgdbGameId);
 
                 foreach (var group in releasesByGame)
@@ -159,31 +155,26 @@ public sealed class SyncGamesHandler : IRequestHandler<SyncGamesCommand, SyncRes
                                 data.ReleaseDate,
                                 releaseType,
                                 data.Region),
-                            cancellationToken);
+                            ct);
                     }
                 }
 
-                await releaseRepository.SaveChangesAsync(cancellationToken);
+                await releaseRepository.SaveChangesAsync(ct);
 
-                // Commit: todos los cambios se hacen visibles de golpe.
-                await unitOfWork.CommitTransactionAsync(cancellationToken);
+                // Capturar contadores para el log fuera de la lambda.
+                platformCount = platformCache.Count;
+                gameCount = gameCache.Count;
+            }, cancellationToken);
 
-                logger.LogInformation(
-                    "Sync completado. Juegos: {Games}, Plataformas: {Platforms}",
-                    gameCache.Count,
-                    platformCache.Count);
+            logger.LogInformation(
+                "Sync completado. Juegos: {Games}, Plataformas: {Platforms}",
+                gameCount,
+                platformCount);
 
-                return new SyncResultDto(
-                    Success: true,
-                    GamesProcessed: gameCache.Count,
-                    PlatformsProcessed: platformCache.Count);
-            }
-            catch
-            {
-                // Rollback: si algo falla, se descartan todos los cambios.
-                await unitOfWork.RollbackTransactionAsync(cancellationToken);
-                throw;
-            }
+            return new SyncResultDto(
+                Success: true,
+                GamesProcessed: gameCount,
+                PlatformsProcessed: platformCount);
         }
         catch (Exception ex)
         {

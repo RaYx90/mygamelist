@@ -1,16 +1,16 @@
 using GameList.Domain.Interfaces;
-using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore;
 
 namespace GameList.Infrastructure.Persistence;
 
 /// <summary>
 /// Implementación de <see cref="IUnitOfWork"/> usando EF Core.
-/// Gestiona transacciones explícitas sobre el <see cref="AppDbContext"/>.
+/// Usa <see cref="IExecutionStrategy"/> para compatibilidad con estrategias de retry
+/// (ej: NpgsqlRetryingExecutionStrategy), que no permiten BeginTransaction directo.
 /// </summary>
 public sealed class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext context;
-    private IDbContextTransaction? currentTransaction;
 
     public UnitOfWork(AppDbContext context)
     {
@@ -18,26 +18,14 @@ public sealed class UnitOfWork : IUnitOfWork
     }
 
     /// <inheritdoc/>
-    public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
+    public async Task ExecuteInTransactionAsync(Func<CancellationToken, Task> operation, CancellationToken cancellationToken = default)
     {
-        currentTransaction = await context.Database.BeginTransactionAsync(cancellationToken);
-    }
-
-    /// <inheritdoc/>
-    public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
-    {
-        if (currentTransaction is null) return;
-        await currentTransaction.CommitAsync(cancellationToken);
-        await currentTransaction.DisposeAsync();
-        currentTransaction = null;
-    }
-
-    /// <inheritdoc/>
-    public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
-    {
-        if (currentTransaction is null) return;
-        await currentTransaction.RollbackAsync(cancellationToken);
-        await currentTransaction.DisposeAsync();
-        currentTransaction = null;
+        var strategy = context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async ct =>
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(ct);
+            await operation(ct);
+            await transaction.CommitAsync(ct);
+        }, cancellationToken);
     }
 }
