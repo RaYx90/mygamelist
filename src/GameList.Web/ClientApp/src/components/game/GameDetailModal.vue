@@ -60,12 +60,14 @@
               {{ isPurchased ? '✅ Comprado' : '🛒 Marcar como comprado' }}
             </button>
             <div class="social-group-stats mt-2">
-              <span v-if="favCount > 0" class="stat-badge fav">
-                ❤️ {{ favCount }} del grupo {{ favCount === 1 ? 'lo quiere' : 'lo quieren' }}
+              <span v-if="favCount > 0" class="stat-badge fav expandable" role="button" tabindex="0" @click="showFavNames = !showFavNames" @keydown.enter="showFavNames = !showFavNames">
+                ❤️ {{ favCount }} del grupo {{ favCount === 1 ? 'lo quiere' : 'lo quieren' }} <span class="expand-arrow">{{ showFavNames ? '▲' : '▼' }}</span>
               </span>
-              <span v-if="purchasedBy.length > 0" class="stat-badge purchased">
-                ✅ {{ purchasedBySummary }}
+              <div v-if="showFavNames && favoritedBy.length > 0" class="stat-names">{{ favoritedBy.join(', ') }}</div>
+              <span v-if="purchasedBy.length > 0" class="stat-badge purchased expandable" role="button" tabindex="0" @click="showPurNames = !showPurNames" @keydown.enter="showPurNames = !showPurNames">
+                ✅ {{ purchasedBy.length }} ya {{ purchasedBy.length === 1 ? 'lo tiene' : 'lo tienen' }} <span class="expand-arrow">{{ showPurNames ? '▲' : '▼' }}</span>
               </span>
+              <div v-if="showPurNames && purchasedBy.length > 0" class="stat-names">{{ purchasedBy.join(', ') }}</div>
             </div>
           </div>
 
@@ -86,7 +88,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAuth } from '../../composables/useAuth.js'
 import { useFormatDate } from '../../composables/useFormatDate.js'
 
@@ -114,6 +116,7 @@ const props = defineProps({
   isFavorite: { type: Boolean, default: false },
   isPurchased: { type: Boolean, default: false },
   favCount: { type: Number, default: 0 },
+  favoritedBy: { type: Array, default: () => [] },
   purchasedBy: { type: Array, default: () => [] },
   canGoBack: { type: Boolean, default: false }
 })
@@ -128,11 +131,8 @@ const categoryLabel = computed(() => CATEGORY_LABELS[props.game.gameCategory] ??
 const { isLoggedIn } = useAuth()
 const { formatDate } = useFormatDate()
 
-const purchasedBySummary = computed(() => {
-  const list = props.purchasedBy
-  if (list.length <= 3) return `${list.join(', ')} ya lo ${list.length === 1 ? 'tiene' : 'tienen'}`
-  return `${list.slice(0, 2).join(', ')} y ${list.length - 2} más ya lo tienen`
-})
+const showFavNames = ref(false)
+const showPurNames = ref(false)
 
 const storeLinks = computed(() => {
   const links = []
@@ -248,4 +248,15 @@ const storeLinks = computed(() => {
 }
 .stat-badge.fav { color: #f97f7f; }
 .stat-badge.purchased { color: #7fd97f; }
+.stat-badge.expandable { cursor: pointer; transition: background 0.15s; }
+.stat-badge.expandable:hover { background: rgba(255,255,255,0.12); }
+.expand-arrow { font-size: 0.6rem; opacity: 0.6; margin-left: 0.2rem; }
+.stat-names {
+  width: 100%;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  padding: 0.3rem 0.6rem;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+}
 </style>

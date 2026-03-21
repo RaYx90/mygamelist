@@ -7,11 +7,11 @@ export function useGameSocialData(gameStatus) {
     if (!gameStatus.value) return { favCount: 0, purchasedCount: 0, isFavorite: false, isPurchased: false }
     const isFavorite = gameStatus.value.myFavorites?.includes(gameId) ?? false
     const isPurchased = gameStatus.value.myPurchases?.includes(gameId) ?? false
-    const otherFavs = gameStatus.value.favoritedCountInGroup?.[gameId] ?? 0
-    const otherPurchases = gameStatus.value.purchasedByInGroup?.[gameId]?.length ?? 0
+    const favoritedBy = gameStatus.value.favoritedByInGroup?.[gameId] ?? []
+    const purchasedByGroup = gameStatus.value.purchasedByInGroup?.[gameId] ?? []
     return {
-      favCount: (isFavorite ? 1 : 0) + otherFavs,
-      purchasedCount: (isPurchased ? 1 : 0) + otherPurchases,
+      favCount: (isFavorite ? 1 : 0) + favoritedBy.length,
+      purchasedCount: (isPurchased ? 1 : 0) + purchasedByGroup.length,
       isFavorite,
       isPurchased
     }

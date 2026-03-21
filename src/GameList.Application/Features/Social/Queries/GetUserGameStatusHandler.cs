@@ -44,7 +44,7 @@ public sealed class GetUserGameStatusHandler : IRequestHandler<GetUserGameStatus
         var myPurchasesList = myPurchases.Select(p => p.GameId).Distinct().ToList();
 
         var purchasedByInGroup = new Dictionary<int, IReadOnlyList<string>>();
-        var favCountInGroup = new Dictionary<int, int>();
+        var favoritedByInGroup = new Dictionary<int, IReadOnlyList<string>>();
 
         if (user.GroupId.HasValue)
         {
@@ -58,13 +58,13 @@ public sealed class GetUserGameStatusHandler : IRequestHandler<GetUserGameStatus
                     purchasedByInGroup[g.Key] = g.Select(p => usernameById.GetValueOrDefault(p.UserId, "?")).ToList();
                 var groupFavs = await favoriteRepository.GetByUserIdsAndGameIdsAsync(memberIds, request.GameIds, cancellationToken);
                 foreach (var g in groupFavs.GroupBy(f => f.GameId))
-                    favCountInGroup[g.Key] = g.Count();
+                    favoritedByInGroup[g.Key] = g.Select(f => usernameById.GetValueOrDefault(f.UserId, "?")).ToList();
             }
         }
 
-        return new UserGameStatusDto(myFavsList, myPurchasesList, purchasedByInGroup, favCountInGroup);
+        return new UserGameStatusDto(myFavsList, myPurchasesList, purchasedByInGroup, favoritedByInGroup);
     }
 
     private static UserGameStatusDto Empty() =>
-        new([], [], new Dictionary<int, IReadOnlyList<string>>(), new Dictionary<int, int>());
+        new([], [], new Dictionary<int, IReadOnlyList<string>>(), new Dictionary<int, IReadOnlyList<string>>());
 }
