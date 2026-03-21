@@ -27,6 +27,11 @@ public sealed class UserEntity
     public DateTime CreatedAt { get; private set; }
 
     /// <summary>
+    /// Ruta relativa al avatar del usuario (e.g. "/uploads/avatars/5/logo/logo.png"). <c>null</c> si no tiene avatar.
+    /// </summary>
+    public string? AvatarPath { get; private set; }
+
+    /// <summary>
     /// Propiedad de navegación al grupo. Solo se carga cuando se hace Include() explícito.
     /// </summary>
     public GroupEntity? Group { get; private set; }
@@ -59,6 +64,9 @@ public sealed class UserEntity
         if (string.IsNullOrWhiteSpace(newUsername)) throw new ArgumentException("El nombre de usuario no puede estar vacío.", nameof(newUsername));
         Username = newUsername.Trim();
     }
+
+    /// <summary>Establece o elimina la ruta del avatar del usuario.</summary>
+    public void SetAvatarPath(string? path) => AvatarPath = path;
 
     /// <summary>Asigna el usuario al grupo indicado guardando su clave primaria.</summary>
     public void JoinGroup(int groupId) => GroupId = groupId;

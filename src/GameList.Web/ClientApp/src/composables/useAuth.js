@@ -11,7 +11,8 @@ const state = reactive({
   userId: null,
   username: null,
   email: null,
-  groupId: null
+  groupId: null,
+  avatarPath: null
 })
 
 export function useAuth() {
@@ -60,11 +61,16 @@ export function useAuth() {
     state.username = newUsername
   }
 
+  function updateAvatarPath(path) {
+    state.avatarPath = path
+  }
+
   function setState(data) {
     state.userId = data.userId ?? null
     state.username = data.username ?? null
     state.email = data.email ?? null
     state.groupId = data.groupId ?? null
+    state.avatarPath = data.avatarPath ?? null
   }
 
   function clearState() {
@@ -72,6 +78,7 @@ export function useAuth() {
     state.username = null
     state.email = null
     state.groupId = null
+    state.avatarPath = null
   }
 
   return {
@@ -79,11 +86,13 @@ export function useAuth() {
     username: computed(() => state.username),
     email: computed(() => state.email),
     groupId: computed(() => state.groupId),
+    avatarPath: computed(() => state.avatarPath),
     isLoggedIn: computed(() => !!state.userId),
     init,
     login,
     logout,
     updateGroupId,
-    updateUsername
+    updateUsername,
+    updateAvatarPath
   }
 }

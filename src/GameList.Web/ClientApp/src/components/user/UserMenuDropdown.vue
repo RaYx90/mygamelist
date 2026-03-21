@@ -154,7 +154,7 @@ import { getMyFavorites, getMyPurchases, removeFavorite, unmarkPurchased } from 
 
 const router = useRouter()
 const route = useRoute()
-const { username, isLoggedIn, logout, updateUsername } = useAuth()
+const { username, isLoggedIn, logout, updateUsername, avatarPath, updateAvatarPath } = useAuth()
 
 function goToReleaseMonth(releaseDate) {
   if (!releaseDate) return
@@ -203,12 +203,7 @@ onBeforeUnmount(() => {
 })
 
 // ── Avatar ─────────────────────────────────────────────────────────────────
-const AVATAR_KEY = computed(() => `gl_avatar_${username.value}`)
-const avatarUrl = ref(null)
-
-onMounted(() => {
-  avatarUrl.value = localStorage.getItem(AVATAR_KEY.value) ?? null
-})
+const avatarUrl = computed(() => avatarPath.value ? `${avatarPath.value}?t=${Date.now()}` : null)
 
 const AVATAR_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6']
 const avatarColor = computed(() => {
@@ -218,16 +213,18 @@ const avatarColor = computed(() => {
 const avatarStyle = computed(() => avatarUrl.value ? {} : { background: avatarColor.value })
 const initial = computed(() => (username.value ?? '?')[0].toUpperCase())
 
-function handleAvatarChange(e) {
+async function handleAvatarChange(e) {
   const file = e.target.files?.[0]
   if (!file) return
-  const reader = new FileReader()
-  reader.onload = (ev) => {
-    const dataUrl = ev.target.result
-    localStorage.setItem(AVATAR_KEY.value, dataUrl)
-    avatarUrl.value = dataUrl
-  }
-  reader.readAsDataURL(file)
+  const formData = new FormData()
+  formData.append('file', file)
+  try {
+    const res = await fetch('/api/auth/avatar', { method: 'POST', body: formData, credentials: 'same-origin' })
+    if (res.ok) {
+      const data = await res.json()
+      updateAvatarPath(data.avatarPath)
+    }
+  } catch { /* silenciar error de red */ }
 }
 
 // ── Cambiar nombre ─────────────────────────────────────────────────────────

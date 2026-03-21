@@ -24,6 +24,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<UserEntity>
         builder.HasIndex(u => u.Email).IsUnique();
         builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(500);
         builder.Property(u => u.CreatedAt).IsRequired();
+        builder.Property(u => u.AvatarPath).HasMaxLength(500);
         builder.HasOne(u => u.Group)
             .WithMany(g => g.Members)
             .HasForeignKey(u => u.GroupId)

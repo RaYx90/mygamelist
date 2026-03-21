@@ -44,6 +44,6 @@ public sealed class RegisterHandler : IRequestHandler<RegisterCommand, UserDto>
         await userRepository.AddAsync(user, cancellationToken);
         await userRepository.SaveChangesAsync(cancellationToken);
 
-        return new UserDto(user.Id, user.Username, user.Email, user.GroupId);
+        return new UserDto(user.Id, user.Username, user.Email, user.GroupId, user.AvatarPath);
     }
 }

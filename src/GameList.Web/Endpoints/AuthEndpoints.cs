@@ -2,6 +2,7 @@ using GameList.Application.Common.Interfaces;
 using GameList.Application.Features.Auth.Commands;
 using GameList.Application.Features.Auth.Queries;
 using GameList.Domain.Exceptions;
+using GameList.Domain.Interfaces;
 using GameList.Infrastructure.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -24,6 +25,7 @@ public static class AuthEndpoints
         api.MapGet("/me", Me).WithName("Me").RequireAuthorization();
         api.MapPost("/logout", Logout).WithName("Logout");
         api.MapPut("/username", ChangeUsername).WithName("ChangeUsername").RequireAuthorization();
+        api.MapPost("/avatar", UploadAvatar).WithName("UploadAvatar").RequireAuthorization().DisableAntiforgery();
         return app;
     }
 
@@ -42,7 +44,7 @@ public static class AuthEndpoints
             var user = await sender.Send(new RegisterCommand(body.Username, body.Email, body.Password), ct);
             var token = jwtService.GenerateToken(user.UserId, user.Username, user.Email, user.GroupId);
             SetAuthCookie(ctx, token, env);
-            return TypedResults.Ok((object)new { user.UserId, user.Username, user.Email, user.GroupId });
+            return TypedResults.Ok((object)new { user.UserId, user.Username, user.Email, user.GroupId, user.AvatarPath });
         }
         catch (DomainException ex)
         {
@@ -59,7 +61,7 @@ public static class AuthEndpoints
         if (user is null) return TypedResults.Unauthorized();
         var token = jwtService.GenerateToken(user.UserId, user.Username, user.Email, user.GroupId);
         SetAuthCookie(ctx, token, env);
-        return TypedResults.Ok((object)new { user.UserId, user.Username, user.Email, user.GroupId });
+        return TypedResults.Ok((object)new { user.UserId, user.Username, user.Email, user.GroupId, user.AvatarPath });
     }
 
     private static async Task<Results<Ok<object>, UnauthorizedHttpResult>> Me(
@@ -68,7 +70,7 @@ public static class AuthEndpoints
         var userId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var dto = await sender.Send(new GetCurrentUserQuery(userId), ct);
         if (dto is null) return TypedResults.Unauthorized();
-        return TypedResults.Ok((object)new { dto.UserId, dto.Username, dto.Email, dto.GroupId });
+        return TypedResults.Ok((object)new { dto.UserId, dto.Username, dto.Email, dto.GroupId, dto.AvatarPath });
     }
 
     private static async Task<Results<Ok<object>, BadRequest<string>, Conflict<string>>> ChangeUsername(
@@ -90,6 +92,55 @@ public static class AuthEndpoints
         }
         catch (ConflictException ex) { return TypedResults.Conflict(ex.Message); }
         catch (DomainException ex) { return TypedResults.BadRequest(ex.Message); }
+    }
+
+    private static readonly HashSet<string> AllowedContentTypes = ["image/png", "image/jpeg", "image/webp"];
+    private const long MaxAvatarSize = 2 * 1024 * 1024; // 2 MB
+
+    private static async Task<Results<Ok<object>, BadRequest<string>>> UploadAvatar(
+        IUserRepository userRepository, ClaimsPrincipal principal,
+        IFormFile file, CancellationToken ct)
+    {
+        var userId = int.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        if (file.Length == 0 || file.Length > MaxAvatarSize)
+            return TypedResults.BadRequest("El archivo debe pesar entre 1 byte y 2 MB.");
+
+        if (!AllowedContentTypes.Contains(file.ContentType))
+            return TypedResults.BadRequest("Solo se permiten imágenes PNG, JPEG o WebP.");
+
+        var ext = file.ContentType switch
+        {
+            "image/png" => ".png",
+            "image/jpeg" => ".jpg",
+            "image/webp" => ".webp",
+            _ => ".png"
+        };
+
+        var dir = Path.Combine("uploads", "avatars", userId.ToString(), "logo");
+        var absoluteDir = Path.Combine(Directory.GetCurrentDirectory(), dir);
+        Directory.CreateDirectory(absoluteDir);
+
+        // Eliminar avatares previos del directorio
+        foreach (var existing in Directory.GetFiles(absoluteDir, "logo.*"))
+            File.Delete(existing);
+
+        var fileName = $"logo{ext}";
+        var absolutePath = Path.Combine(absoluteDir, fileName);
+
+        await using var stream = new FileStream(absolutePath, FileMode.Create);
+        await file.CopyToAsync(stream, ct);
+
+        var relativePath = $"/{dir.Replace('\\', '/')}/{fileName}";
+
+        var user = await userRepository.GetByIdAsync(userId, ct);
+        if (user is null) return TypedResults.BadRequest("Usuario no encontrado.");
+
+        user.SetAvatarPath(relativePath);
+        userRepository.Update(user);
+        await userRepository.SaveChangesAsync(ct);
+
+        return TypedResults.Ok((object)new { avatarPath = relativePath });
     }
 
     private static Ok Logout(HttpContext ctx)

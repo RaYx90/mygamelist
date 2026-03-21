@@ -35,6 +35,6 @@ public sealed class LoginHandler : IRequestHandler<LoginCommand, UserDto?>
         var user = await userRepository.GetByEmailAsync(request.Email, cancellationToken);
         if (user is null || !passwordHasher.Verify(request.Password, user.PasswordHash))
             return null;
-        return new UserDto(user.Id, user.Username, user.Email, user.GroupId);
+        return new UserDto(user.Id, user.Username, user.Email, user.GroupId, user.AvatarPath);
     }
 }

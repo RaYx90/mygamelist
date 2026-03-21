@@ -35,8 +35,9 @@ RUN dotnet publish src/GameList.Web/GameList.Web.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-# Non-root user for security
-RUN useradd --no-create-home --shell /bin/false appuser
+# Non-root user for security + avatar upload directory
+RUN useradd --no-create-home --shell /bin/false appuser \
+    && mkdir -p /app/uploads/avatars && chown -R appuser:appuser /app/uploads
 
 COPY --from=build --chown=appuser /app/publish .
 

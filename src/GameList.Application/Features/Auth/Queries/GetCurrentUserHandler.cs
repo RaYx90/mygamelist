@@ -21,6 +21,6 @@ public sealed class GetCurrentUserHandler : IRequestHandler<GetCurrentUserQuery,
     {
         var user = await userRepository.GetByIdAsync(request.UserId, cancellationToken);
         if (user is null) return null;
-        return new UserDto(user.Id, user.Username, user.Email, user.GroupId);
+        return new UserDto(user.Id, user.Username, user.Email, user.GroupId, user.AvatarPath);
     }
 }

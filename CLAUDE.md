@@ -141,6 +141,21 @@ All code in **English** with **type suffixes**:
 - `CustomWebApplicationFactory`: PostgreSQL via Testcontainers, `FakeGameDataProvider`, hosted services removed.
 - Unit tests use **NSubstitute 5.3.0**.
 
+## Test User for Manual Testing
+
+| Campo | Valor |
+|---|---|
+| Username | Claude |
+| Email | claude@gamelist.com |
+| Password | ClaudeTest2026! |
+| Registration Code | (ver `REGISTRATION_SECRET_CODE` en `.env`) |
+
+Usar estas credenciales para pruebas manuales con Chrome DevTools MCP.
+
+## Additional Instructions
+
+- GitHub Copilot instructions: `.github/copilot-instructions.md` — coding rules, naming conventions, architecture constraints. Keep in sync with this file.
+
 ## Token & Cost Optimization
 
 - **Read only necessary lines** — never full files unless required.
