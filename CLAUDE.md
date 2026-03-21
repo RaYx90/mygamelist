@@ -226,3 +226,12 @@ Usar estas credenciales para pruebas manuales con Chrome DevTools MCP.
 | 2026-03-21 | Modales (GameDetailModal, DayReleasesModal) se cierran con tecla Escape |
 | 2026-03-21 | Accesibilidad: botón "+N más" en DayCell navegable por teclado (tabindex + keydown.enter) |
 | 2026-03-21 | Botón "Hoy" ahora visible siempre que no estés en el día actual (antes solo al cambiar de mes) — nuevo evento go-today + goToToday() optimizado sin recarga innecesaria |
+| 2026-03-21 | Avatares persistidos en servidor: endpoint POST /api/auth/avatar, volumen Docker, AvatarPath en UserEntity y UserDto |
+| 2026-03-21 | Badges sociales expandibles: click para ver nombres de quién tiene favorito/comprado un juego (antes solo número) |
+| 2026-03-21 | Backend: FavoritedByInGroup devuelve lista de nombres (antes solo conteo) para soportar expandibles |
+| 2026-03-21 | Fix: doble botón X en búsqueda mobile — ocultar ::-webkit-search-cancel-button nativo |
+| 2026-03-21 | Fix: contadores favoritos/compras del menú se refrescan al abrir el dropdown (antes solo en mount) |
+| 2026-03-21 | Fix: badge expandible no se muestra si favoritedBy está vacío (solo el usuario actual lo tiene) |
+| 2026-03-21 | UX: pestaña Coincidencias del grupo con badges expandibles (antes nombres en texto plano) |
+| 2026-03-21 | Fix: filtrar releases IGDB con fechas placeholder — campo `human` sin coma = fecha aproximada (Q1, año, mes). Eliminados ~3900 releases falsos |
+| 2026-03-21 | IUnitOfWork + transacción atómica en SyncGamesHandler — usuarios nunca ven estado intermedio durante re-sync |

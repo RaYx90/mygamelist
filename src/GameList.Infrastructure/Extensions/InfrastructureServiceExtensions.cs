@@ -38,6 +38,9 @@ public static class InfrastructureServiceExtensions
                     maxRetryDelay: TimeSpan.FromSeconds(5),
                     errorCodesToAdd: null)));
 
+        // Unit of Work (transacciones explícitas)
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
         // Repositories
         services.AddScoped<IGameRepository, GameRepository>();
         services.AddScoped<IPlatformRepository, PlatformRepository>();
