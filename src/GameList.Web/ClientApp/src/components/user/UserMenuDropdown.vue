@@ -173,7 +173,16 @@ function formatReleaseDate(releaseDate) {
 const open = ref(false)
 const menuRef = ref(null)
 
-function toggleMenu() { open.value = !open.value }
+async function toggleMenu() {
+  open.value = !open.value
+  if (open.value && isLoggedIn.value) {
+    try {
+      const [favs, buys] = await Promise.all([getMyFavorites(), getMyPurchases()])
+      favCount.value = favs.length
+      buyCount.value = buys.length
+    } catch { /* silencioso */ }
+  }
+}
 
 function handleOutsideClick(e) {
   if (menuRef.value && !menuRef.value.contains(e.target)) open.value = false

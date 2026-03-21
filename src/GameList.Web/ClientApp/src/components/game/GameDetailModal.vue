@@ -60,7 +60,7 @@
               {{ isPurchased ? '✅ Comprado' : '🛒 Marcar como comprado' }}
             </button>
             <div class="social-group-stats mt-2">
-              <span v-if="favCount > 0" class="stat-badge fav expandable" role="button" tabindex="0" @click="showFavNames = !showFavNames" @keydown.enter="showFavNames = !showFavNames">
+              <span v-if="favoritedBy.length > 0" class="stat-badge fav expandable" role="button" tabindex="0" @click="showFavNames = !showFavNames" @keydown.enter="showFavNames = !showFavNames">
                 ❤️ {{ favCount }} del grupo {{ favCount === 1 ? 'lo quiere' : 'lo quieren' }} <span class="expand-arrow">{{ showFavNames ? '▲' : '▼' }}</span>
               </span>
               <div v-if="showFavNames && favoritedBy.length > 0" class="stat-names">{{ favoritedBy.join(', ') }}</div>

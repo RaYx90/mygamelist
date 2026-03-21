@@ -148,8 +148,16 @@
                 <span class="badge bg-danger me-1">❤️ {{ game.wantedBy.length }}</span>
                 <span class="badge bg-success">✅ {{ game.purchasedBy.length }}</span>
               </div>
-              <p v-if="game.wantedBy.length" class="insight-users">Quieren: {{ game.wantedBy.join(', ') }}</p>
-              <p v-if="game.purchasedBy.length" class="insight-users">Comprado por: {{ game.purchasedBy.join(', ') }}</p>
+              <div class="insight-social-stats">
+                <span v-if="game.wantedBy.length" class="stat-badge fav expandable" role="button" tabindex="0" @click="toggleInsightWanted(game.gameId, $event)" @keydown.enter="toggleInsightWanted(game.gameId, $event)">
+                  ❤️ {{ game.wantedBy.length }} {{ game.wantedBy.length === 1 ? 'lo quiere' : 'lo quieren' }} <span class="expand-arrow">{{ expandedInsightWanted.has(game.gameId) ? '▲' : '▼' }}</span>
+                </span>
+                <div v-if="expandedInsightWanted.has(game.gameId)" class="stat-names" @click.stop>{{ game.wantedBy.join(', ') }}</div>
+                <span v-if="game.purchasedBy.length" class="stat-badge purchased expandable" role="button" tabindex="0" @click="toggleInsightPurchased(game.gameId, $event)" @keydown.enter="toggleInsightPurchased(game.gameId, $event)">
+                  ✅ {{ game.purchasedBy.length }} ya {{ game.purchasedBy.length === 1 ? 'lo tiene' : 'lo tienen' }} <span class="expand-arrow">{{ expandedInsightPurchased.has(game.gameId) ? '▲' : '▼' }}</span>
+                </span>
+                <div v-if="expandedInsightPurchased.has(game.gameId)" class="stat-names" @click.stop>{{ game.purchasedBy.join(', ') }}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -183,6 +191,17 @@ const memberGames = ref([])
 const loadingInsights = ref(false)
 const activeTab = ref('members')
 const expandedMember = ref(null)
+const expandedInsightWanted = ref(new Set())
+const expandedInsightPurchased = ref(new Set())
+
+function toggleInsightWanted(gameId, e) {
+  e.stopPropagation()
+  expandedInsightWanted.value.has(gameId) ? expandedInsightWanted.value.delete(gameId) : expandedInsightWanted.value.add(gameId)
+}
+function toggleInsightPurchased(gameId, e) {
+  e.stopPropagation()
+  expandedInsightPurchased.value.has(gameId) ? expandedInsightPurchased.value.delete(gameId) : expandedInsightPurchased.value.add(gameId)
+}
 
 // Game detail modal
 const selectedGame = ref(null)
@@ -651,11 +670,32 @@ async function reloadGroupData() {
   color: #aaa;
   margin-bottom: 0.25rem;
 }
-.insight-users {
+.insight-social-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+  width: 100%;
+}
+.insight-social-stats .stat-badge {
   font-size: 0.72rem;
-  color: #ccc;
-  margin-top: 0.2rem;
-  margin-bottom: 0;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.07);
+  color: #bbb;
+}
+.insight-social-stats .stat-badge.fav { color: #f97f7f; }
+.insight-social-stats .stat-badge.purchased { color: #7fd97f; }
+.insight-social-stats .stat-badge.expandable { cursor: pointer; transition: background 0.15s; }
+.insight-social-stats .stat-badge.expandable:hover { background: rgba(255,255,255,0.12); }
+.insight-social-stats .expand-arrow { font-size: 0.55rem; opacity: 0.6; margin-left: 0.15rem; }
+.insight-social-stats .stat-names {
+  width: 100%;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  padding: 0.25rem 0.5rem;
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
 }
 .insight-card-clickable {
   cursor: pointer;
