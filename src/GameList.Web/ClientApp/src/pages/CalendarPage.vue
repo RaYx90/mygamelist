@@ -12,7 +12,9 @@
           <MonthNavigator
             :selected-month="selectedMonth"
             :current-year="currentYear"
+            :selected-day="selectedDay"
             @month-changed="handleMonthChanged"
+            @go-today="handleGoToday"
           />
           <PlatformFilter
             :platforms="platforms"
@@ -179,7 +181,7 @@ const {
   selectedDay, crossMonthResults, crossMonthLoading,
   releasesForDay, loadReleases, loadPlatforms,
   onMonthChanged, onPlatformChanged, onCategoryChanged, onSearchChanged, searchAcrossYear, clearFilters,
-  goToPrevDay, goToNextDay,
+  goToToday, goToPrevDay, goToNextDay,
 } = useCalendar()
 
 const { gameStatus, loadStatus, toggleFavorite, togglePurchase } = useGameStatus()
@@ -233,6 +235,11 @@ watch(() => route.query.month, async (val) => {
 
 async function handleMonthChanged(month) {
   await onMonthChanged(month)
+  await loadStatus(calendarDays.value.flatMap(d => d.releases.map(r => r.gameId)))
+}
+
+async function handleGoToday() {
+  await goToToday()
   await loadStatus(calendarDays.value.flatMap(d => d.releases.map(r => r.gameId)))
 }
 

@@ -81,6 +81,16 @@ export function useCalendar() {
     await loadReleases()
   }
 
+  async function goToToday() {
+    const now = new Date()
+    const month = now.getMonth() + 1
+    const needsReload = month !== selectedMonth.value
+    selectedMonth.value = month
+    selectedDay.value = toDateStr(now)
+    router.replace({ query: { ...route.query, month } })
+    if (needsReload) await loadReleases()
+  }
+
   async function onPlatformChanged(id) {
     selectedPlatformId.value = id
     await loadReleases()
@@ -172,6 +182,7 @@ export function useCalendar() {
     onSearchChanged,
     searchAcrossYear,
     clearFilters,
+    goToToday,
     goToPrevDay,
     goToNextDay,
   }

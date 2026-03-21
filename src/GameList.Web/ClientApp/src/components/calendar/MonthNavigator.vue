@@ -22,24 +22,32 @@
       aria-label="Mes siguiente"
     >&#8250;</button>
     <button
-      v-if="selectedMonth !== currentMonthNumber"
+      v-if="!isOnToday"
       class="month-nav-today"
-      @click="emit('month-changed', currentMonthNumber)"
-      aria-label="Ir al mes actual"
+      @click="emit('go-today')"
+      aria-label="Ir a hoy"
     >Hoy</button>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
-defineProps({
+const props = defineProps({
   selectedMonth: { type: Number, required: true },
-  currentYear: { type: Number, required: true }
+  currentYear: { type: Number, required: true },
+  selectedDay: { type: String, default: null }
 })
-const emit = defineEmits(['month-changed'])
+const emit = defineEmits(['month-changed', 'go-today'])
 
-const currentMonthNumber = new Date().getMonth() + 1
+const todayStr = (() => {
+  const t = new Date()
+  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`
+})()
+
+const isOnToday = computed(() => props.selectedDay === todayStr)
 </script>
 
 <style scoped>
