@@ -76,13 +76,9 @@ internal sealed class IgdbDataProviderAdapter : IGameDataProvider
             // - No se filtra por tema Indie (38): el etiquetado de IGDB es poco fiable
             //   y excluye erróneamente juegos AAA (ej. Crimson Desert). IsIndie se guarda
             //   como campo informativo en la BD pero no se usa para excluir del sync.
-            // category = 0 → solo fechas exactas (YYYYMMDD). Excluye placeholders de IGDB:
-            //   category 1 = solo mes, 2 = solo año, 3-6 = trimestre, 7 = TBD.
-            //   Sin este filtro, miles de juegos con fecha "Q1 2026" se asignan al último día del trimestre.
             var query =
                 ReleaseDateFields +
                 $"where date >= {startUnix} & date <= {endUnix}" +
-                $" & category = 0" +
                 $" & platform = ({AllowedPlatforms})" +
                 $" & game != null & platform != null;" +
                 $" limit {pageSize}; offset {offset};";
@@ -105,8 +101,11 @@ internal sealed class IgdbDataProviderAdapter : IGameDataProvider
             offset += pageSize;
         }
 
+        // Excluye releases con fechas placeholder de IGDB (ej: "Q1 2026", "2026", "Mar 2026", "TBD").
+        // Las fechas exactas tienen formato "Mon DD, YYYY" (con coma), las placeholder no.
         return results
             .Where(r => r.Date.HasValue && r.Game is not null && r.Platform is not null)
+            .Where(r => r.Human is not null && r.Human.Contains(','))
             // Elimina duplicados del mismo juego+plataforma (puede haber varias fechas de lanzamiento).
             .DistinctBy(r => (r.Game!.Id, r.Platform!.Id))
             .Select(r => new GameReleaseData(
