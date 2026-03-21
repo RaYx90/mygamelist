@@ -76,9 +76,13 @@ internal sealed class IgdbDataProviderAdapter : IGameDataProvider
             // - No se filtra por tema Indie (38): el etiquetado de IGDB es poco fiable
             //   y excluye erróneamente juegos AAA (ej. Crimson Desert). IsIndie se guarda
             //   como campo informativo en la BD pero no se usa para excluir del sync.
+            // category = 0 → solo fechas exactas (YYYYMMDD). Excluye placeholders de IGDB:
+            //   category 1 = solo mes, 2 = solo año, 3-6 = trimestre, 7 = TBD.
+            //   Sin este filtro, miles de juegos con fecha "Q1 2026" se asignan al último día del trimestre.
             var query =
                 ReleaseDateFields +
                 $"where date >= {startUnix} & date <= {endUnix}" +
+                $" & category = 0" +
                 $" & platform = ({AllowedPlatforms})" +
                 $" & game != null & platform != null;" +
                 $" limit {pageSize}; offset {offset};";
