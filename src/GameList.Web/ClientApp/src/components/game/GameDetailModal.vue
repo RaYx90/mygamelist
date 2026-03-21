@@ -61,10 +61,10 @@
             </button>
             <div class="social-group-stats mt-2">
               <span v-if="favCount > 0" class="stat-badge fav">
-                ❤️ {{ favCount }} del grupo lo quieren
+                ❤️ {{ favCount }} del grupo {{ favCount === 1 ? 'lo quiere' : 'lo quieren' }}
               </span>
               <span v-if="purchasedBy.length > 0" class="stat-badge purchased">
-                ✅ {{ purchasedBy.join(', ') }} ya lo tienen
+                ✅ {{ purchasedBySummary }}
               </span>
             </div>
           </div>
@@ -127,6 +127,12 @@ const categoryLabel = computed(() => CATEGORY_LABELS[props.game.gameCategory] ??
 
 const { isLoggedIn } = useAuth()
 const { formatDate } = useFormatDate()
+
+const purchasedBySummary = computed(() => {
+  const list = props.purchasedBy
+  if (list.length <= 3) return `${list.join(', ')} ya lo ${list.length === 1 ? 'tiene' : 'tienen'}`
+  return `${list.slice(0, 2).join(', ')} y ${list.length - 2} más ya lo tienen`
+})
 
 const storeLinks = computed(() => {
   const links = []
