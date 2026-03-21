@@ -205,3 +205,9 @@ All code in **English** with **type suffixes**:
 | 2026-03-14 | Fix: Microsoft.EntityFrameworkCore.Relational fijado a 9.0.4 en tests para eliminar warning MSB3277 |
 | 2026-03-14 | Fix: MapCategory fallback cambiado de Unknown(99) a MainGame(0) — IGDB devuelve null en game_type para muchos juegos base; 213 juegos corregidos en BD |
 | 2026-03-14 | Fix: eliminado filtro indie (themes!=38) de query IGDB — etiquetado poco fiable excluía AAA como Crimson Desert; IsIndie queda como campo informativo |
+| 2026-03-21 | Fix: botón "Hoy" navegaba al día 1 del mes en vez del día actual — causa raíz en onMonthChanged() y watcher de vista |
+| 2026-03-21 | Nuevo composable useIsMobile.js: un solo listener resize compartido con debounce (antes 30+ listeners en DayCell) |
+| 2026-03-21 | Breakpoint móvil unificado a 640px (antes 600 en DayCell vs 640 en CalendarPage) |
+| 2026-03-21 | Modales (GameDetailModal, DayReleasesModal) se cierran con tecla Escape |
+| 2026-03-21 | Accesibilidad: botón "+N más" en DayCell navegable por teclado (tabindex + keydown.enter) |
+| 2026-03-21 | Botón "Hoy" ahora visible siempre que no estés en el día actual (antes solo al cambiar de mes) — nuevo evento go-today + goToToday() optimizado sin recarga innecesaria |
