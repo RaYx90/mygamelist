@@ -225,14 +225,16 @@ onBeforeUnmount(() => {
   window.removeEventListener('navigate-to-game-day', handleNavigateToGameDay)
 })
 
+/// Navega al día exacto de un juego desde el panel de favoritos/compras.
+/// Se setea selectedDay DESPUÉS de onMonthChanged para evitar que este lo sobrescriba.
 async function handleNavigateToGameDay(e) {
   const { releaseDate, month } = e.detail
   selectedView.value = 'day'
-  selectedDay.value = releaseDate
   if (month !== selectedMonth.value) {
     await onMonthChanged(month)
     await loadStatus(calendarDays.value.flatMap(d => d.releases.map(r => r.gameId)))
   }
+  selectedDay.value = releaseDate
 }
 
 // Auto-dispara búsqueda cross-month cuando no hay resultados locales y hay término de búsqueda

@@ -142,25 +142,23 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useAuth } from '../../composables/useAuth.js'
 import { changeUsername } from '../../api/authApi.js'
 import { getMyFavorites, getMyPurchases, removeFavorite, unmarkPurchased } from '../../api/socialApi.js'
 
 const router = useRouter()
-const route = useRoute()
 const { username, isLoggedIn, logout, updateUsername, avatarPath, updateAvatarPath } = useAuth()
 
 /// Navega al día exacto del juego en vista Día y cierra el panel.
+/// Cierra el panel y emite evento para que CalendarPage navegue al día exacto del juego.
 function goToGameDay(game) {
   if (!game.releaseDate) return
   const [, month] = String(game.releaseDate).split('-').map(Number)
   closePanel()
-  // Emitir evento global para que CalendarPage abra la vista Día en la fecha exacta.
   window.dispatchEvent(new CustomEvent('navigate-to-game-day', {
     detail: { releaseDate: String(game.releaseDate), month }
   }))
-  router.push({ path: '/', query: { ...route.query, month } })
 }
 
 function formatReleaseDate(releaseDate) {
