@@ -18,6 +18,7 @@ public sealed class GetMyFavoritesHandler : IRequestHandler<GetMyFavoritesQuery,
         var favorites = await favoriteRepository.GetByUserIdsAsync([request.UserId], cancellationToken);
         return favorites
             .Where(f => f.Game is not null)
+            .Where(f => f.Game!.Releases.Any()) // Solo juegos con al menos 1 release activo
             .OrderBy(f => f.Game!.Name)
             .Select(f => new GameSummaryDto(
                 f.GameId,

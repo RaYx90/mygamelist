@@ -17,6 +17,7 @@ public sealed class GetMyPurchasesHandler : IRequestHandler<GetMyPurchasesQuery,
         var purchases = await purchaseRepository.GetByUserIdsAsync([request.UserId], cancellationToken);
         return purchases
             .Where(p => p.Game is not null)
+            .Where(p => p.Game!.Releases.Any()) // Solo juegos con al menos 1 release activo
             .OrderBy(p => p.Game!.Name)
             .Select(p => new GameSummaryDto(
                 p.GameId,
