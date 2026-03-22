@@ -235,3 +235,4 @@ Usar estas credenciales para pruebas manuales con Chrome DevTools MCP.
 | 2026-03-21 | UX: pestaña Coincidencias del grupo con badges expandibles (antes nombres en texto plano) |
 | 2026-03-21 | Fix: filtrar releases IGDB con fechas placeholder — campo `human` sin coma = fecha aproximada (Q1, año, mes). Eliminados ~3900 releases falsos |
 | 2026-03-21 | IUnitOfWork + transacción atómica en SyncGamesHandler — usuarios nunca ven estado intermedio durante re-sync |
+| 2026-03-22 | Fix: panel favoritos/compras — click en juego navega al día exacto en vista Día (antes solo iba al mes). Evento global navigate-to-game-day |

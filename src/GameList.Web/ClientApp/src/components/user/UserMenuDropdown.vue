@@ -120,21 +120,16 @@
             Sin juegos en esta lista aún.
           </div>
           <ul v-else class="panel-list">
-            <li v-for="game in panelItems" :key="game.gameId" class="panel-item">
+            <li v-for="game in panelItems" :key="game.gameId" class="panel-item" @click="goToGameDay(game)" role="button" tabindex="0" @keydown.enter="goToGameDay(game)">
               <img v-if="game.coverImageUrl" :src="game.coverImageUrl" :alt="game.gameName" class="panel-thumb" />
               <span v-else class="panel-thumb-ph">🎮</span>
               <div class="panel-game-info">
                 <span class="panel-game-name">{{ game.gameName }}</span>
-                <button
-                  v-if="game.releaseDate"
-                  class="panel-game-date"
-                  @click="goToReleaseMonth(game.releaseDate)"
-                  :title="`Ir al mes de lanzamiento`"
-                >
-                  📅 {{ formatReleaseDate(game.releaseDate) }} →
-                </button>
+                <span v-if="game.releaseDate" class="panel-game-date">
+                  📅 {{ formatReleaseDate(game.releaseDate) }}
+                </span>
               </div>
-              <button class="panel-item-remove" @click="removeFromPanel(game.gameId)" title="Quitar">
+              <button class="panel-item-remove" @click.stop="removeFromPanel(game.gameId)" title="Quitar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </li>
@@ -156,10 +151,15 @@ const router = useRouter()
 const route = useRoute()
 const { username, isLoggedIn, logout, updateUsername, avatarPath, updateAvatarPath } = useAuth()
 
-function goToReleaseMonth(releaseDate) {
-  if (!releaseDate) return
-  const month = parseInt(String(releaseDate).split('-')[1])
+/// Navega al día exacto del juego en vista Día y cierra el panel.
+function goToGameDay(game) {
+  if (!game.releaseDate) return
+  const [, month] = String(game.releaseDate).split('-').map(Number)
   closePanel()
+  // Emitir evento global para que CalendarPage abra la vista Día en la fecha exacta.
+  window.dispatchEvent(new CustomEvent('navigate-to-game-day', {
+    detail: { releaseDate: String(game.releaseDate), month }
+  }))
   router.push({ path: '/', query: { ...route.query, month } })
 }
 
@@ -578,6 +578,7 @@ async function handleLogout() {
   padding: 0.5rem 0.5rem;
   border-radius: 8px;
   transition: background 0.12s;
+  cursor: pointer;
 }
 .panel-item:hover { background: rgba(255,255,255,0.04); }
 .panel-thumb {

@@ -158,7 +158,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCalendar } from '../composables/useCalendar.js'
 import { useGameStatus } from '../composables/useGameStatus.js'
@@ -216,7 +216,24 @@ onMounted(async () => {
     loadPlatforms(),
     loadReleases().then(() => loadStatus(calendarDays.value.flatMap(d => d.releases.map(r => r.gameId))))
   ])
+
+  // Escucha evento del panel de favoritos/compras para navegar al día exacto del juego.
+  window.addEventListener('navigate-to-game-day', handleNavigateToGameDay)
 })
+
+onBeforeUnmount(() => {
+  window.removeEventListener('navigate-to-game-day', handleNavigateToGameDay)
+})
+
+async function handleNavigateToGameDay(e) {
+  const { releaseDate, month } = e.detail
+  selectedView.value = 'day'
+  selectedDay.value = releaseDate
+  if (month !== selectedMonth.value) {
+    await onMonthChanged(month)
+    await loadStatus(calendarDays.value.flatMap(d => d.releases.map(r => r.gameId)))
+  }
+}
 
 // Auto-dispara búsqueda cross-month cuando no hay resultados locales y hay término de búsqueda
 watch([filteredCalendarDays, isLoading], ([days, loading]) => {
